@@ -1,0 +1,44 @@
+# Unreal Engine
+Binaries/
+Build/
+DerivedDataCache/
+Intermediate/
+Saved/
+*.VC.db
+*.opensdf
+*.opendb
+*.sdf
+*.suo
+*.xcodeproj
+*.xcworkspace
+
+# Visual Studio
+.vs/
+*.sln
+*.user
+*.suo
+*.userosscache
+*.solutionprops
+*.dbmdl
+*.jfm
+*.pfx
+*.publishsettings
+*.ncrunchproject
+
+# Windows
+Thumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+
+# Config (보안 민감 설정은 제외, 기본 Config는 포함)
+Saved/Config/
+
+# Content — 큰 바이너리 에셋은 Git LFS 사용 권장
+# Content/  ← 주석 처리: 에셋 포함하려면 이 줄 활성화
+
+# 로그
+*.log
+
+# Claude Code 로컬 설정
+.claude/
+.mcp.json
