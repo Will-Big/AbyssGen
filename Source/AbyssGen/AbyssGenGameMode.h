@@ -15,9 +15,12 @@ class AAbyssGenGameMode : public AGameModeBase
 	GENERATED_BODY()
 
 public:
-	
+
 	/** Constructor */
 	AAbyssGenGameMode();
+
+protected:
+	virtual void BeginPlay() override;
 };
 
 

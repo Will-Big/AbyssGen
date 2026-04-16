@@ -25,6 +25,7 @@ public class AbyssGen : ModuleRules
 
 		PublicIncludePaths.AddRange(new string[] {
 			"AbyssGen",
+			"AbyssGen/DungeonGen",
 			"AbyssGen/Variant_Platforming",
 			"AbyssGen/Variant_Platforming/Animation",
 			"AbyssGen/Variant_Combat",
