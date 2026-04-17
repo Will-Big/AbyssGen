@@ -27,6 +27,10 @@ void ADungeonGenerator::Generate()
 	DeduplicateEdges();
 	BuildMST();
 	ReviveLoops(Rand);
+	ComputeCorridors(Rand);
+	MarkDoorCells();
+	AssignSpecialRooms(Rand);
+	VerifyConnectivity();
 
 	if (UWorld* World = GetWorld())
 	{
@@ -282,6 +286,208 @@ void ADungeonGenerator::ReviveLoops(FRandomStream& Rand)
 
 	UE_LOG(LogTemp, Log, TEXT("[DungeonGen] Loop edges: %d / %d candidates (LoopRatio=%.2f)"),
 		DungeonGraph.LoopEdges.Num(), Candidates.Num(), LoopRatio);
+}
+
+void ADungeonGenerator::ComputeCorridors(FRandomStream& Rand)
+{
+	DungeonGraph.Corridors.Reset();
+
+	// MST + Loop 간선 모두 복도로 연결
+	TArray<FDungeonEdge> AllEdges = DungeonGraph.MstEdges;
+	AllEdges.Append(DungeonGraph.LoopEdges);
+
+	for (const FDungeonEdge& Edge : AllEdges)
+	{
+		const FIntPoint A = DungeonGraph.Rooms[Edge.RoomA].GridCenter;
+		const FIntPoint B = DungeonGraph.Rooms[Edge.RoomB].GridCenter;
+
+		// 수평 먼저(0) vs 수직 먼저(1) 랜덤 선택
+		FLCorridor Corridor;
+		Corridor.RoomA  = Edge.RoomA;
+		Corridor.RoomB  = Edge.RoomB;
+		Corridor.Start  = A;
+		Corridor.End    = B;
+		Corridor.Corner = Rand.RandRange(0, 1) == 0
+			? FIntPoint(B.X, A.Y)  // 수평 먼저
+			: FIntPoint(A.X, B.Y); // 수직 먼저
+
+		DungeonGraph.Corridors.Add(Corridor);
+	}
+
+	UE_LOG(LogTemp, Log, TEXT("[DungeonGen] Corridors: %d"), DungeonGraph.Corridors.Num());
+}
+
+void ADungeonGenerator::MarkDoorCells()
+{
+	for (FRoom& R : DungeonGraph.Rooms) R.DoorCells.Reset();
+
+	auto IsInsideRoom = [](const FIntPoint& Cell, const FRoom& Room) -> bool
+	{
+		const int32 HalfX = Room.GridSize.X / 2;
+		const int32 HalfY = Room.GridSize.Y / 2;
+		return Cell.X >= Room.GridCenter.X - HalfX && Cell.X < Room.GridCenter.X + HalfX
+			&& Cell.Y >= Room.GridCenter.Y - HalfY && Cell.Y < Room.GridCenter.Y + HalfY;
+	};
+
+	// 이전→현재 전환점(진입/탈출)만 DoorCell로 마킹
+	auto ScanSegment = [&](FIntPoint From, FIntPoint To)
+	{
+		const int32 DX = FMath::Sign(To.X - From.X);
+		const int32 DY = FMath::Sign(To.Y - From.Y);
+		FIntPoint Prev = From;
+		FIntPoint Cell = From;
+		Cell.X += DX;
+		Cell.Y += DY;
+
+		while (Prev != To)
+		{
+			for (int32 i = 0; i < DungeonGraph.Rooms.Num(); ++i)
+			{
+				FRoom& R = DungeonGraph.Rooms[i];
+				const bool bPrevInside = IsInsideRoom(Prev, R);
+				const bool bCurrInside = IsInsideRoom(Cell, R);
+
+				// 외부→내부(진입): Cell이 도어
+				// 내부→외부(탈출): Prev가 도어
+				if (!bPrevInside && bCurrInside && !R.DoorCells.Contains(Cell))
+				{
+					R.DoorCells.Add(Cell);
+				}
+				else if (bPrevInside && !bCurrInside && !R.DoorCells.Contains(Prev))
+				{
+					R.DoorCells.Add(Prev);
+				}
+			}
+			Prev = Cell;
+			Cell.X += DX;
+			Cell.Y += DY;
+		}
+	};
+
+	for (const FLCorridor& C : DungeonGraph.Corridors)
+	{
+		ScanSegment(C.Start, C.Corner);
+		ScanSegment(C.Corner, C.End);
+	}
+
+	int32 TotalDoors = 0;
+	for (const FRoom& R : DungeonGraph.Rooms) TotalDoors += R.DoorCells.Num();
+	UE_LOG(LogTemp, Log, TEXT("[DungeonGen] Door cells marked: %d"), TotalDoors);
+}
+
+void ADungeonGenerator::AssignSpecialRooms(FRandomStream& Rand)
+{
+	// 모든 메인 방 Normal로 초기화
+	for (int32 Idx : DungeonGraph.MainRoomIndices)
+	{
+		DungeonGraph.Rooms[Idx].Type = ERoomType::Normal;
+	}
+
+	if (DungeonGraph.MainRoomIndices.IsEmpty()) return;
+
+	// Start: 원점에 가장 가까운 메인 방
+	int32 StartIdx = DungeonGraph.MainRoomIndices[0];
+	float MinDist = DungeonGraph.Rooms[StartIdx].FloatCenter.SizeSquared();
+	for (int32 Idx : DungeonGraph.MainRoomIndices)
+	{
+		const float D = DungeonGraph.Rooms[Idx].FloatCenter.SizeSquared();
+		if (D < MinDist) { MinDist = D; StartIdx = Idx; }
+	}
+	DungeonGraph.Rooms[StartIdx].Type = ERoomType::Start;
+
+	// Boss: Start에서 FloatCenter 거리가 가장 먼 메인 방
+	int32 BossIdx = StartIdx;
+	float MaxDist = 0.f;
+	const FVector2D StartCenter = DungeonGraph.Rooms[StartIdx].FloatCenter;
+	for (int32 Idx : DungeonGraph.MainRoomIndices)
+	{
+		if (Idx == StartIdx) continue;
+		const float D = FVector2D::DistSquared(DungeonGraph.Rooms[Idx].FloatCenter, StartCenter);
+		if (D > MaxDist) { MaxDist = D; BossIdx = Idx; }
+	}
+	DungeonGraph.Rooms[BossIdx].Type = ERoomType::Boss;
+
+	// MST에서 연결 수(degree) 계산
+	TMap<int32, int32> Degree;
+	for (int32 Idx : DungeonGraph.MainRoomIndices) Degree.Add(Idx, 0);
+	for (const FDungeonEdge& E : DungeonGraph.MstEdges)
+	{
+		++Degree[E.RoomA];
+		++Degree[E.RoomB];
+	}
+
+	// Treasure: Start·Boss가 아닌 MST leaf(degree==1) 중 랜덤
+	TArray<int32> Leaves;
+	for (int32 Idx : DungeonGraph.MainRoomIndices)
+	{
+		if (Idx == StartIdx || Idx == BossIdx) continue;
+		if (Degree.FindRef(Idx) == 1) Leaves.Add(Idx);
+	}
+
+	if (!Leaves.IsEmpty())
+	{
+		const int32 TreasureIdx = Leaves[Rand.RandRange(0, Leaves.Num() - 1)];
+		DungeonGraph.Rooms[TreasureIdx].Type = ERoomType::Treasure;
+	}
+
+	UE_LOG(LogTemp, Log, TEXT("[DungeonGen] Special rooms — Start:%d Boss:%d Leaves:%d"),
+		StartIdx, BossIdx, Leaves.Num());
+}
+
+void ADungeonGenerator::VerifyConnectivity() const
+{
+	if (DungeonGraph.MainRoomIndices.IsEmpty()) return;
+
+	// 인접 리스트 구성 (MST + Loop)
+	TMap<int32, TArray<int32>> Adj;
+	for (int32 Idx : DungeonGraph.MainRoomIndices) Adj.Add(Idx, {});
+
+	auto AddEdge = [&](const FDungeonEdge& E)
+	{
+		if (Adj.Contains(E.RoomA)) Adj[E.RoomA].Add(E.RoomB);
+		if (Adj.Contains(E.RoomB)) Adj[E.RoomB].Add(E.RoomA);
+	};
+	for (const FDungeonEdge& E : DungeonGraph.MstEdges)  AddEdge(E);
+	for (const FDungeonEdge& E : DungeonGraph.LoopEdges)  AddEdge(E);
+
+	// Start 방에서 BFS
+	int32 StartIdx = INDEX_NONE;
+	for (int32 Idx : DungeonGraph.MainRoomIndices)
+	{
+		if (DungeonGraph.Rooms[Idx].Type == ERoomType::Start) { StartIdx = Idx; break; }
+	}
+	if (StartIdx == INDEX_NONE) StartIdx = DungeonGraph.MainRoomIndices[0];
+
+	TSet<int32> Visited;
+	TQueue<int32> Queue;
+	Queue.Enqueue(StartIdx);
+	Visited.Add(StartIdx);
+
+	while (!Queue.IsEmpty())
+	{
+		int32 Cur;
+		Queue.Dequeue(Cur);
+		for (int32 Next : Adj[Cur])
+		{
+			if (!Visited.Contains(Next))
+			{
+				Visited.Add(Next);
+				Queue.Enqueue(Next);
+			}
+		}
+	}
+
+	const int32 Total = DungeonGraph.MainRoomIndices.Num();
+	const int32 Reached = Visited.Num();
+
+	if (Reached == Total)
+	{
+		UE_LOG(LogTemp, Log, TEXT("[DungeonGen] Connectivity OK — all %d main rooms reachable"), Total);
+	}
+	else
+	{
+		UE_LOG(LogTemp, Warning, TEXT("[DungeonGen] Connectivity FAIL — reached %d / %d main rooms"), Reached, Total);
+	}
 }
 
 int32 ADungeonGenerator::RunSeparation()

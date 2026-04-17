@@ -56,4 +56,8 @@ private:
 	void DeduplicateEdges();
 	void BuildMST();
 	void ReviveLoops(FRandomStream& Rand);
+	void ComputeCorridors(FRandomStream& Rand);
+	void MarkDoorCells();
+	void AssignSpecialRooms(FRandomStream& Rand);
+	void VerifyConnectivity() const;
 };

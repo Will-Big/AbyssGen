@@ -52,6 +52,27 @@ struct FDungeonEdge
 };
 
 USTRUCT(BlueprintType)
+struct FLCorridor
+{
+	GENERATED_BODY()
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
+	FIntPoint Start = FIntPoint::ZeroValue;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
+	FIntPoint Corner = FIntPoint::ZeroValue;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
+	FIntPoint End = FIntPoint::ZeroValue;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
+	int32 RoomA = INDEX_NONE;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
+	int32 RoomB = INDEX_NONE;
+};
+
+USTRUCT(BlueprintType)
 struct FDungeonGraph
 {
 	GENERATED_BODY()
@@ -72,6 +93,9 @@ struct FDungeonGraph
 	TArray<FDungeonEdge> LoopEdges;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
+	TArray<FLCorridor> Corridors;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
 	int32 Seed = 0;
 
 	void Reset()
@@ -81,6 +105,7 @@ struct FDungeonGraph
 		DelaunayEdges.Reset();
 		MstEdges.Reset();
 		LoopEdges.Reset();
+		Corridors.Reset();
 		Seed = 0;
 	}
 };
