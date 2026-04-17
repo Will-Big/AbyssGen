@@ -14,6 +14,9 @@ public:
 	ADungeonGenerator();
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Dungeon")
+	bool bRandomizeSeed = true;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Dungeon")
 	int32 Seed = 42;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Dungeon", meta = (ClampMin = "0.0", ClampMax = "1.0"))
@@ -35,6 +38,9 @@ public:
 	int32 MaxSeparationIterations = 500;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Dungeon")
+	float SeparationPadding = 1.f; // 방 사이 최소 칸 간격
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Dungeon")
 	float MainRoomSizeMultiplier = 1.25f;
 
 protected:
@@ -46,4 +52,5 @@ private:
 	int32 SeparationStep();
 	int32 RunSeparation();
 	void SelectMainRooms();
+	void Triangulate();
 };

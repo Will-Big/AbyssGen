@@ -1,6 +1,7 @@
 #include "DungeonGenerator.h"
 #include "DungeonDebugDraw.h"
 #include "DrawDebugHelpers.h"
+#include "DungeonTriangulate.h"
 
 ADungeonGenerator::ADungeonGenerator()
 {
@@ -10,6 +11,11 @@ ADungeonGenerator::ADungeonGenerator()
 void ADungeonGenerator::Generate()
 {
 	DungeonGraph.Reset();
+
+	if (bRandomizeSeed)
+	{
+		Seed = FMath::Rand();
+	}
 	DungeonGraph.Seed = Seed;
 
 	FRandomStream Rand(Seed);
@@ -17,6 +23,7 @@ void ADungeonGenerator::Generate()
 	GenerateRooms(Rand);
 	const int32 Iterations = RunSeparation();
 	SelectMainRooms();
+	Triangulate();
 
 	if (UWorld* World = GetWorld())
 	{
@@ -75,8 +82,8 @@ int32 ADungeonGenerator::SeparationStep()
 			const FRoom& B = DungeonGraph.Rooms[j];
 
 			const FVector2D Delta = A.FloatCenter - B.FloatCenter;
-			const float MinSepX = (A.GridSize.X + B.GridSize.X) * 0.5f;
-			const float MinSepY = (A.GridSize.Y + B.GridSize.Y) * 0.5f;
+			const float MinSepX = (A.GridSize.X + B.GridSize.X) * 0.5f + SeparationPadding;
+			const float MinSepY = (A.GridSize.Y + B.GridSize.Y) * 0.5f + SeparationPadding;
 
 			if (FMath::Abs(Delta.X) >= MinSepX) continue;
 			if (FMath::Abs(Delta.Y) >= MinSepY) continue;
@@ -132,6 +139,36 @@ void ADungeonGenerator::SelectMainRooms()
 		{
 			DungeonGraph.MainRoomIndices.Add(i);
 		}
+	}
+}
+
+void ADungeonGenerator::Triangulate()
+{
+	DungeonGraph.DelaunayEdges.Reset();
+
+	const int32 MainCount = DungeonGraph.MainRoomIndices.Num();
+	if (MainCount < 3) return;
+
+	TArray<FVector2D> Points;
+	Points.Reserve(MainCount);
+	for (int32 Idx : DungeonGraph.MainRoomIndices)
+	{
+		Points.Add(DungeonGraph.Rooms[Idx].FloatCenter);
+	}
+
+	TArray<int32> Triangles;
+	DungeonTriangulate::Triangulate(Points, Triangles);
+
+	// Triangles는 로컬 인덱스(Points 기준) → Rooms 전역 인덱스로 변환
+	for (int32 t = 0; t + 2 < Triangles.Num(); t += 3)
+	{
+		const int32 I0 = DungeonGraph.MainRoomIndices[Triangles[t + 0]];
+		const int32 I1 = DungeonGraph.MainRoomIndices[Triangles[t + 1]];
+		const int32 I2 = DungeonGraph.MainRoomIndices[Triangles[t + 2]];
+
+		DungeonGraph.DelaunayEdges.Add({ I0, I1, 0.f });
+		DungeonGraph.DelaunayEdges.Add({ I1, I2, 0.f });
+		DungeonGraph.DelaunayEdges.Add({ I2, I0, 0.f });
 	}
 }
 

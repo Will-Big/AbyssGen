@@ -43,6 +43,11 @@ void FDungeonDebugDraw::DrawGraph(const UWorld* World, const FDungeonGraph& Grap
 		DrawRoom(World, Room, Color, Duration);
 	}
 
+	for (const FDungeonEdge& Edge : Graph.DelaunayEdges)
+	{
+		DrawEdge(World, Edge, Graph.Rooms, FColor(128, 128, 128), Duration);
+	}
+
 	for (const FDungeonEdge& Edge : Graph.MstEdges)
 	{
 		DrawEdge(World, Edge, Graph.Rooms, FColor::Yellow, Duration);
