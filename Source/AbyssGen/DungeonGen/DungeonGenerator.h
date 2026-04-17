@@ -53,4 +53,7 @@ private:
 	int32 RunSeparation();
 	void SelectMainRooms();
 	void Triangulate();
+	void DeduplicateEdges();
+	void BuildMST();
+	void ReviveLoops(FRandomStream& Rand);
 };

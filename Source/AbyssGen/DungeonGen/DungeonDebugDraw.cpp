@@ -32,7 +32,7 @@ void FDungeonDebugDraw::DrawEdge(const UWorld* World, const FDungeonEdge& Edge, 
 	const FVector From = RoomWorldCenter(Rooms[Edge.RoomA]);
 	const FVector To   = RoomWorldCenter(Rooms[Edge.RoomB]);
 
-	DrawDebugLine(World, From, To, Color, false, Duration, 0, 4.f);
+	DrawDebugLine(World, From, To, Color, false, Duration, 0, 12.f);
 }
 
 void FDungeonDebugDraw::DrawGraph(const UWorld* World, const FDungeonGraph& Graph, float Duration)

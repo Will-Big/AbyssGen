@@ -24,6 +24,9 @@ void ADungeonGenerator::Generate()
 	const int32 Iterations = RunSeparation();
 	SelectMainRooms();
 	Triangulate();
+	DeduplicateEdges();
+	BuildMST();
+	ReviveLoops(Rand);
 
 	if (UWorld* World = GetWorld())
 	{
@@ -170,6 +173,115 @@ void ADungeonGenerator::Triangulate()
 		DungeonGraph.DelaunayEdges.Add({ I1, I2, 0.f });
 		DungeonGraph.DelaunayEdges.Add({ I2, I0, 0.f });
 	}
+}
+
+void ADungeonGenerator::DeduplicateEdges()
+{
+	TSet<TPair<int32, int32>> Seen;
+	TArray<FDungeonEdge> Unique;
+	Unique.Reserve(DungeonGraph.DelaunayEdges.Num());
+
+	for (FDungeonEdge& Edge : DungeonGraph.DelaunayEdges)
+	{
+		// 항상 작은 인덱스가 A가 되도록 정규화
+		const int32 Lo = FMath::Min(Edge.RoomA, Edge.RoomB);
+		const int32 Hi = FMath::Max(Edge.RoomA, Edge.RoomB);
+		const TPair<int32, int32> Key(Lo, Hi);
+
+		if (Seen.Contains(Key)) continue;
+		Seen.Add(Key);
+
+		Edge.RoomA = Lo;
+		Edge.RoomB = Hi;
+		Edge.Weight = FVector2D::Distance(
+			DungeonGraph.Rooms[Lo].FloatCenter,
+			DungeonGraph.Rooms[Hi].FloatCenter
+		);
+		Unique.Add(Edge);
+	}
+
+	DungeonGraph.DelaunayEdges = MoveTemp(Unique);
+	UE_LOG(LogTemp, Log, TEXT("[DungeonGen] Delaunay edges after dedup: %d"), DungeonGraph.DelaunayEdges.Num());
+}
+
+void ADungeonGenerator::BuildMST()
+{
+	DungeonGraph.MstEdges.Reset();
+
+	const int32 N = DungeonGraph.Rooms.Num();
+	if (DungeonGraph.DelaunayEdges.Num() == 0) return;
+
+	// Union-Find
+	TArray<int32> Parent, Rank;
+	Parent.SetNumUninitialized(N);
+	Rank.SetNumZeroed(N);
+	for (int32 i = 0; i < N; ++i) Parent[i] = i;
+
+	TFunction<int32(int32)> Find = [&](int32 X) -> int32
+	{
+		if (Parent[X] != X) Parent[X] = Find(Parent[X]); // path compression
+		return Parent[X];
+	};
+
+	auto Union = [&](int32 X, int32 Y) -> bool
+	{
+		const int32 RX = Find(X), RY = Find(Y);
+		if (RX == RY) return false;
+		// union by rank
+		if (Rank[RX] < Rank[RY]) Parent[RX] = RY;
+		else if (Rank[RX] > Rank[RY]) Parent[RY] = RX;
+		else { Parent[RY] = RX; ++Rank[RX]; }
+		return true;
+	};
+
+	// Weight 오름차순 정렬 후 Kruskal
+	TArray<FDungeonEdge> Sorted = DungeonGraph.DelaunayEdges;
+	Sorted.Sort([](const FDungeonEdge& A, const FDungeonEdge& B){ return A.Weight < B.Weight; });
+
+	for (const FDungeonEdge& Edge : Sorted)
+	{
+		if (Union(Edge.RoomA, Edge.RoomB))
+		{
+			DungeonGraph.MstEdges.Add(Edge);
+		}
+	}
+
+	UE_LOG(LogTemp, Log, TEXT("[DungeonGen] MST edges: %d"), DungeonGraph.MstEdges.Num());
+}
+
+void ADungeonGenerator::ReviveLoops(FRandomStream& Rand)
+{
+	DungeonGraph.LoopEdges.Reset();
+
+	// MST에 포함된 간선 쌍을 빠르게 조회하기 위한 Set
+	TSet<TPair<int32,int32>> MstSet;
+	MstSet.Reserve(DungeonGraph.MstEdges.Num());
+	for (const FDungeonEdge& E : DungeonGraph.MstEdges)
+	{
+		MstSet.Add(TPair<int32,int32>(E.RoomA, E.RoomB));
+	}
+
+	// MST에 없는 간선 수집
+	TArray<FDungeonEdge> Candidates;
+	for (const FDungeonEdge& E : DungeonGraph.DelaunayEdges)
+	{
+		if (!MstSet.Contains(TPair<int32,int32>(E.RoomA, E.RoomB)))
+		{
+			Candidates.Add(E);
+		}
+	}
+
+	// Fisher-Yates 셔플 후 앞에서 LoopRatio만큼 선택
+	const int32 PickCount = FMath::RoundToInt(Candidates.Num() * FMath::Clamp(LoopRatio, 0.f, 1.f));
+	for (int32 i = 0; i < PickCount; ++i)
+	{
+		const int32 j = Rand.RandRange(i, Candidates.Num() - 1);
+		Candidates.Swap(i, j);
+		DungeonGraph.LoopEdges.Add(Candidates[i]);
+	}
+
+	UE_LOG(LogTemp, Log, TEXT("[DungeonGen] Loop edges: %d / %d candidates (LoopRatio=%.2f)"),
+		DungeonGraph.LoopEdges.Num(), Candidates.Num(), LoopRatio);
 }
 
 int32 ADungeonGenerator::RunSeparation()
