@@ -22,11 +22,20 @@ public:
 	UFUNCTION(CallInEditor, Category = "Dungeon")
 	void Generate();
 
+	UFUNCTION(CallInEditor, Category = "Dungeon")
+	void StepSeparation();
+
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Dungeon")
 	int32 TotalRoomCount = 80;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Dungeon")
 	float SpawnRadius = 40.f; // 칸 단위
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Dungeon")
+	int32 MaxSeparationIterations = 500;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Dungeon")
+	float MainRoomSizeMultiplier = 1.25f;
 
 protected:
 	UPROPERTY(VisibleAnywhere, Category = "Dungeon|Debug")
@@ -34,4 +43,7 @@ protected:
 
 private:
 	void GenerateRooms(FRandomStream& Rand);
+	int32 SeparationStep();
+	int32 RunSeparation();
+	void SelectMainRooms();
 };
