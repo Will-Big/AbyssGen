@@ -1,11 +1,14 @@
 #include "DungeonDebugDraw.h"
+#include "DungeonConstants.h"
 #include "DrawDebugHelpers.h"
+
+using DungeonConstants::CellSize;
 
 static FVector RoomWorldCenter(const FRoom& Room)
 {
 	return FVector(
-		Room.GridCenter.X * FDungeonDebugDraw::CellSize,
-		Room.GridCenter.Y * FDungeonDebugDraw::CellSize,
+		Room.GridCenter.X * CellSize,
+		Room.GridCenter.Y * CellSize,
 		0.f
 	);
 }
@@ -18,8 +21,7 @@ void FDungeonDebugDraw::DrawRoom(const UWorld* World, const FRoom& Room, FColor 
 	const FVector Extent = FVector(
 		Room.GridSize.X * CellSize * 0.5f,
 		Room.GridSize.Y * CellSize * 0.5f,
-		50.f
-	);
+		50.f);
 
 	DrawDebugBox(World, Center, Extent, Color, false, Duration, 0, 8.f);
 }

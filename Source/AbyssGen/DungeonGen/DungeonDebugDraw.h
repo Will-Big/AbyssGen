@@ -10,6 +10,4 @@ public:
 	static void DrawEdge(const UWorld* World, const FDungeonEdge& Edge, const TArray<FRoom>& Rooms, FColor Color = FColor::Cyan, float Duration = 10.f);
 	static void DrawCorridor(const UWorld* World, const FLCorridor& Corridor, FColor Color = FColor::Cyan, float Duration = 10.f);
 	static void DrawGraph(const UWorld* World, const FDungeonGraph& Graph, float Duration = 10.f);
-
-	static constexpr float CellSize = 100.f;
 };

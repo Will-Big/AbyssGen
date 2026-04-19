@@ -73,6 +73,36 @@ struct FLCorridor
 };
 
 USTRUCT(BlueprintType)
+struct FDungeonGeneratorConfig
+{
+	GENERATED_BODY()
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly)
+	bool bRandomizeSeed = true;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly)
+	int32 Seed = 42;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, meta = (ClampMin = "0.0", ClampMax = "1.0"))
+	float LoopRatio = 0.15f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly)
+	int32 TotalRoomCount = 80;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly)
+	float SpawnRadius = 40.f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly)
+	int32 MaxSeparationIterations = 500;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly)
+	float SeparationPadding = 1.f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly)
+	float MainRoomSizeMultiplier = 1.25f;
+};
+
+USTRUCT(BlueprintType)
 struct FDungeonGraph
 {
 	GENERATED_BODY()

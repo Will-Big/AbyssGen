@@ -5,6 +5,8 @@
 #include "DungeonTypes.h"
 #include "DungeonGenerator.generated.h"
 
+class UInstancedStaticMeshComponent;
+
 UCLASS()
 class ABYSSGEN_API ADungeonGenerator : public AActor
 {
@@ -13,14 +15,14 @@ class ABYSSGEN_API ADungeonGenerator : public AActor
 public:
 	ADungeonGenerator();
 
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Dungeon")
-	bool bRandomizeSeed = true;
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Dungeon", meta = (ShowOnlyInnerProperties))
+	FDungeonGeneratorConfig Config;
 
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Dungeon")
-	int32 Seed = 42;
+	UPROPERTY(EditAnywhere, Category = "Dungeon|Mesh")
+	TObjectPtr<UStaticMesh> FloorMesh;
 
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Dungeon", meta = (ClampMin = "0.0", ClampMax = "1.0"))
-	float LoopRatio = 0.15f;
+	UPROPERTY(EditAnywhere, Category = "Dungeon|Mesh")
+	TObjectPtr<UStaticMesh> WallMesh;
 
 	UFUNCTION(CallInEditor, Category = "Dungeon")
 	void Generate();
@@ -28,36 +30,16 @@ public:
 	UFUNCTION(CallInEditor, Category = "Dungeon")
 	void StepSeparation();
 
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Dungeon")
-	int32 TotalRoomCount = 80;
-
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Dungeon")
-	float SpawnRadius = 40.f; // 칸 단위
-
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Dungeon")
-	int32 MaxSeparationIterations = 500;
-
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Dungeon")
-	float SeparationPadding = 1.f; // 방 사이 최소 칸 간격
-
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Dungeon")
-	float MainRoomSizeMultiplier = 1.25f;
+	UFUNCTION(CallInEditor, Category = "Dungeon")
+	void ClearFloor();
 
 protected:
 	UPROPERTY(VisibleAnywhere, Category = "Dungeon|Debug")
 	FDungeonGraph DungeonGraph;
 
-private:
-	void GenerateRooms(FRandomStream& Rand);
-	int32 SeparationStep();
-	int32 RunSeparation();
-	void SelectMainRooms();
-	void Triangulate();
-	void DeduplicateEdges();
-	void BuildMST();
-	void ReviveLoops(FRandomStream& Rand);
-	void ComputeCorridors(FRandomStream& Rand);
-	void MarkDoorCells();
-	void AssignSpecialRooms(FRandomStream& Rand);
-	void VerifyConnectivity() const;
+	UPROPERTY(VisibleAnywhere, Category = "Dungeon|Mesh")
+	TObjectPtr<UInstancedStaticMeshComponent> FloorISM;
+
+	UPROPERTY(VisibleAnywhere, Category = "Dungeon|Mesh")
+	TObjectPtr<UInstancedStaticMeshComponent> WallISM;
 };
