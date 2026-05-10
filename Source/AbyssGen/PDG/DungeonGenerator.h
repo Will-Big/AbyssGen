@@ -1,0 +1,36 @@
+// Fill out your copyright notice in the Description page of Project Settings.
+
+#pragma once
+
+#include "CoreMinimal.h"
+#include "GameFramework/Actor.h"
+#include "DungeonGenerator.generated.h"
+
+class ARB_DungeonRoom1;
+class ARoomBase;
+
+UCLASS()
+class ABYSSGEN_API ADungeonGenerator : public AActor
+{
+	GENERATED_BODY()
+	
+public:	
+	ADungeonGenerator();
+
+	virtual void Tick(float DeltaTime) override;
+
+	UPROPERTY(EditAnywhere, Category = "Rooms")
+	TSubclassOf<ARB_DungeonRoom1> StarterRoom;
+
+	UPROPERTY(EditAnywhere, Category = "Rooms")
+	TArray<TSubclassOf<ARoomBase>> RoomsToBeSpawned;
+
+	TArray<USceneComponent*> Exits;
+
+	void SpawnStarterRoom();
+
+	void SpawnNextRoom();
+
+protected:
+	virtual void BeginPlay() override;
+};

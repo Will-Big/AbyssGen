@@ -14,4 +14,15 @@ class ABYSSGEN_API ARB_DungeonRoom4 : public ARoomBase
 {
 	GENERATED_BODY()
 	
+public:
+	ARB_DungeonRoom4();
+
+	UPROPERTY(VisibleAnywhere, Category = "Components")
+	UArrowComponent* Exit_Arrow_1;
+
+	UPROPERTY(VisibleAnywhere, Category = "Components")
+	UStaticMeshComponent* Closing_Wall_1;
+
+	UPROPERTY(VisibleAnywhere, Category = "Components")
+	UStaticMeshComponent* Closing_Wall_2;
 };

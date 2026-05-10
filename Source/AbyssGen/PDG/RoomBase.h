@@ -19,9 +19,6 @@ public:
 
 	virtual void Tick(float DeltaTime) override;
 
-protected:
-	virtual void BeginPlay() override;
-
 	UPROPERTY(VisibleAnywhere, Category = "Components")
 	USceneComponent* DefaultSceneRoot;
 
@@ -30,7 +27,10 @@ protected:
 
 	UPROPERTY(VisibleAnywhere, Category = "Components")
 	USceneComponent* OverlapFolder;
-	
+
+	UPROPERTY(VisibleAnywhere, Category = "Components")
+	USceneComponent* ExitPointsFolder;
+
 	UPROPERTY(VisibleAnywhere, Category = "Components")
 	UStaticMeshComponent* Cube_1;
 
@@ -63,4 +63,7 @@ protected:
 
 	UPROPERTY(VisibleAnywhere, Category = "Components")
 	UArrowComponent* Arrow;
+
+protected:
+	virtual void BeginPlay() override;
 };

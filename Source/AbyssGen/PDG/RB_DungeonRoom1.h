@@ -13,5 +13,16 @@ UCLASS()
 class ABYSSGEN_API ARB_DungeonRoom1 : public ARoomBase
 {
 	GENERATED_BODY()
-	
+
+public:
+	ARB_DungeonRoom1();
+
+	UPROPERTY(VisibleAnywhere, Category = "Components")
+	UArrowComponent* Exit_Arrow_1;
+
+	UPROPERTY(VisibleAnywhere, Category = "Components")
+	UArrowComponent* Exit_Arrow_2;
+
+	UPROPERTY(VisibleAnywhere, Category = "Components")
+	UArrowComponent* Exit_Arrow_3;
 };
