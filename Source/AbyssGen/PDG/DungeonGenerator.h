@@ -8,6 +8,7 @@
 
 class ARB_DungeonRoom1;
 class ARoomBase;
+class AClosingWall;
 
 UCLASS()
 class ABYSSGEN_API ADungeonGenerator : public AActor
@@ -27,6 +28,9 @@ protected:
 
 	UPROPERTY(EditAnywhere, Category = "Rooms")
 	TArray<TSubclassOf<ARoomBase>> RoomsToBeSpawned;
+
+	UPROPERTY(EditAnywhere, Category = "Unused Exits Closing Wall")
+	TSubclassOf<AClosingWall> ClosingWall;
 
 	UPROPERTY(EditAnywhere, Category = "Dungeon Info")
 	int32 RoomAmount;

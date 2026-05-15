@@ -2,6 +2,7 @@
 #include "RB_DungeonRoom1.h"
 #include "RoomBase.h"
 #include "Components/BoxComponent.h"
+#include "ClosingWall.h"
 
 ADungeonGenerator::ADungeonGenerator()
 {
@@ -19,9 +20,11 @@ void ADungeonGenerator::BeginPlay()
 {
 	Super::BeginPlay();
 
+	FTimerHandle UnusedHandle;
+
 	SpawnStarterRoom();
 	SpawnNextRoom();
-	CloseUnusedExits();
+	this->GetWorld()->GetTimerManager().SetTimer(UnusedHandle, this, &ADungeonGenerator::CloseUnusedExits, 1.0f, false);
 }
 
 void ADungeonGenerator::SpawnStarterRoom()
@@ -82,7 +85,13 @@ void ADungeonGenerator::CloseUnusedExits()
 {
 	for (USceneComponent* Exit : Exits)
 	{
-		Exit->SetVisibility(false);
+		AClosingWall* LatestClosingWall = this->GetWorld()->SpawnActor<AClosingWall>(ClosingWall);
+		
+		FVector RelativeOffset(0.0f, 0.0f, 100.0f);
+		FVector WorldOffset = Exit->GetComponentRotation().RotateVector(RelativeOffset);
+		
+		LatestClosingWall->SetActorLocation(Exit->GetComponentLocation() + WorldOffset);
+		LatestClosingWall->SetActorRotation(Exit->GetComponentRotation() + FRotator(0.0f, 90.0f, 0.0f));
 	}
 }
 
