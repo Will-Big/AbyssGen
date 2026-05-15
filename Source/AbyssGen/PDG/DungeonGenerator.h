@@ -19,18 +19,30 @@ public:
 
 	virtual void Tick(float DeltaTime) override;
 
+protected:
+	virtual void BeginPlay() override;
+
 	UPROPERTY(EditAnywhere, Category = "Rooms")
 	TSubclassOf<ARB_DungeonRoom1> StarterRoom;
 
 	UPROPERTY(EditAnywhere, Category = "Rooms")
 	TArray<TSubclassOf<ARoomBase>> RoomsToBeSpawned;
 
+	UPROPERTY(EditAnywhere, Category = "Dungeon Info")
+	int32 RoomAmount;
+
+	ARoomBase* LatestSpawnedRoom;
+
+	bool bCanSpawn;
+
 	TArray<USceneComponent*> Exits;
+
 
 	void SpawnStarterRoom();
 
 	void SpawnNextRoom();
 
-protected:
-	virtual void BeginPlay() override;
+	void RemoveOverlappingRooms();
+
+	void CloseUnusedExits();
 };

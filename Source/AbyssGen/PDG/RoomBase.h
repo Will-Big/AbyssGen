@@ -31,6 +31,9 @@ public:
 	UPROPERTY(VisibleAnywhere, Category = "Components")
 	USceneComponent* ExitPointsFolder;
 
+protected:
+	virtual void BeginPlay() override;
+
 	UPROPERTY(VisibleAnywhere, Category = "Components")
 	UStaticMeshComponent* Cube_1;
 
@@ -63,7 +66,4 @@ public:
 
 	UPROPERTY(VisibleAnywhere, Category = "Components")
 	UArrowComponent* Arrow;
-
-protected:
-	virtual void BeginPlay() override;
 };
