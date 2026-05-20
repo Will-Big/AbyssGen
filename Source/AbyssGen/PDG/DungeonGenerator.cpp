@@ -3,6 +3,7 @@
 #include "RoomBase.h"
 #include "Components/BoxComponent.h"
 #include "ClosingWall.h"
+#include "Door.h"
 
 ADungeonGenerator::ADungeonGenerator()
 {
@@ -20,11 +21,13 @@ void ADungeonGenerator::BeginPlay()
 {
 	Super::BeginPlay();
 
-	FTimerHandle UnusedHandle;
+	FTimerHandle ExitsHandle;
+	FTimerHandle DoorsHandle;
 
 	SpawnStarterRoom();
 	SpawnNextRoom();
-	this->GetWorld()->GetTimerManager().SetTimer(UnusedHandle, this, &ADungeonGenerator::CloseUnusedExits, 1.0f, false);
+	this->GetWorld()->GetTimerManager().SetTimer(ExitsHandle, this, &ADungeonGenerator::CloseUnusedExits, 1.0f, false);
+	this->GetWorld()->GetTimerManager().SetTimer(DoorsHandle, this, &ADungeonGenerator::SpawnDoors, 1.0f, false);
 }
 
 void ADungeonGenerator::SpawnStarterRoom()
@@ -44,6 +47,8 @@ void ADungeonGenerator::SpawnNextRoom()
 
 	LatestSpawnedRoom->SetActorLocation(SelectedExitPoint->GetComponentLocation());
 	LatestSpawnedRoom->SetActorRotation(SelectedExitPoint->GetComponentRotation());
+
+	DoorList.Add(SelectedExitPoint);
 
 	RemoveOverlappingRooms();
 
@@ -92,6 +97,20 @@ void ADungeonGenerator::CloseUnusedExits()
 		
 		LatestClosingWall->SetActorLocation(Exit->GetComponentLocation() + WorldOffset);
 		LatestClosingWall->SetActorRotation(Exit->GetComponentRotation() + FRotator(0.0f, 90.0f, 0.0f));
+	}
+}
+
+void ADungeonGenerator::SpawnDoors()
+{
+	for (USceneComponent* NewDoor : DoorList)
+	{
+		ADoor* LatestDoorSpawned = this->GetWorld()->SpawnActor<ADoor>(Door);
+
+		FVector RelativeOffset(0.0f, 0.0f, 300.0f);
+		FVector WorldOffset = NewDoor->GetComponentRotation().RotateVector(RelativeOffset);
+
+		LatestDoorSpawned->SetActorLocation(NewDoor->GetComponentLocation() + WorldOffset);
+		LatestDoorSpawned->SetActorRotation(NewDoor->GetComponentRotation() + FRotator(0.0f, 90.0f, 0.0f));
 	}
 }
 

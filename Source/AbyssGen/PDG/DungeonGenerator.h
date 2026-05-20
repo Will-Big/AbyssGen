@@ -9,6 +9,7 @@
 class ARB_DungeonRoom1;
 class ARoomBase;
 class AClosingWall;
+class ADoor;
 
 UCLASS()
 class ABYSSGEN_API ADungeonGenerator : public AActor
@@ -32,6 +33,9 @@ protected:
 	UPROPERTY(EditAnywhere, Category = "Unused Exits Closing Wall")
 	TSubclassOf<AClosingWall> ClosingWall;
 
+	UPROPERTY(EditAnywhere, Category = "Door")
+	TSubclassOf<ADoor> Door;
+
 	UPROPERTY(EditAnywhere, Category = "Dungeon Info")
 	int32 RoomAmount;
 
@@ -41,6 +45,7 @@ protected:
 
 	TArray<USceneComponent*> Exits;
 
+	TArray<USceneComponent*> DoorList;
 
 	void SpawnStarterRoom();
 
@@ -49,4 +54,6 @@ protected:
 	void RemoveOverlappingRooms();
 
 	void CloseUnusedExits();
+
+	void SpawnDoors();
 };

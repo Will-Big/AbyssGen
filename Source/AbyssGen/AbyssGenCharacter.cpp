@@ -11,6 +11,7 @@
 #include "EnhancedInputSubsystems.h"
 #include "InputActionValue.h"
 #include "AbyssGen.h"
+#include "PDG/Door.h"
 
 AAbyssGenCharacter::AAbyssGenCharacter()
 {
@@ -130,4 +131,24 @@ void AAbyssGenCharacter::DoJumpEnd()
 {
 	// signal the character to stop jumping
 	StopJumping();
+}
+
+void AAbyssGenCharacter::NotifyActorBeginOverlap(AActor* OtherActor)
+{
+	Super::NotifyActorBeginOverlap(OtherActor);
+
+	if (OtherActor && OtherActor->ActorHasTag("InteractableDungeonDoors"))
+	{
+		Cast<ADoor>(OtherActor)->OpenDoor();
+	}
+}
+
+void AAbyssGenCharacter::NotifyActorEndOverlap(AActor* OtherActor)
+{
+	Super::NotifyActorEndOverlap(OtherActor);
+
+	if (OtherActor && OtherActor->ActorHasTag("InteractableDungeonDoors"))
+	{
+		Cast<ADoor>(OtherActor)->CloseDoor();
+	}
 }
