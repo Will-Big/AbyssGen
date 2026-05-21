@@ -47,6 +47,13 @@ protected:
 
 	TArray<USceneComponent*> DoorList;
 
+	FRandomStream RandomStream;
+
+	UPROPERTY(EditAnywhere, Category = "Dungeon Info")
+	int32 Seed;
+
+	void SetSeed();
+
 	void SpawnStarterRoom();
 
 	void SpawnNextRoom();

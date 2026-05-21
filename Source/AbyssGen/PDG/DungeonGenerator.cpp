@@ -24,10 +24,28 @@ void ADungeonGenerator::BeginPlay()
 	FTimerHandle ExitsHandle;
 	FTimerHandle DoorsHandle;
 
+	SetSeed();
+
 	SpawnStarterRoom();
 	SpawnNextRoom();
 	this->GetWorld()->GetTimerManager().SetTimer(ExitsHandle, this, &ADungeonGenerator::CloseUnusedExits, 1.0f, false);
 	this->GetWorld()->GetTimerManager().SetTimer(DoorsHandle, this, &ADungeonGenerator::SpawnDoors, 1.0f, false);
+}
+
+void ADungeonGenerator::SetSeed()
+{
+	int32 Results;
+	if (Seed == -1)
+	{
+		Results = FMath::Rand();
+		Seed = Results;
+	}
+	else
+	{
+		Results = Seed;
+	}
+	RandomStream.Initialize(Results);
+	GEngine->AddOnScreenDebugMessage(-1, 5.0f, FColor::Red, FString::Printf(TEXT("Seed: %d"), Results));
 }
 
 void ADungeonGenerator::SpawnStarterRoom()
@@ -41,9 +59,11 @@ void ADungeonGenerator::SpawnNextRoom()
 {
 	bCanSpawn = true;
 
-	LatestSpawnedRoom = this->GetWorld()->SpawnActor<ARoomBase>(RoomsToBeSpawned[rand() % RoomsToBeSpawned.Num()]);
+	int32 RoomIndex = RandomStream.RandRange(0, RoomsToBeSpawned.Num() - 1);
+	LatestSpawnedRoom = this->GetWorld()->SpawnActor<ARoomBase>(RoomsToBeSpawned[RoomIndex]);
 
-	USceneComponent* SelectedExitPoint = Exits[rand() % Exits.Num()];
+	int32 ExitIndex = RandomStream.RandRange(0, Exits.Num() - 1);
+	USceneComponent* SelectedExitPoint = Exits[ExitIndex];
 
 	LatestSpawnedRoom->SetActorLocation(SelectedExitPoint->GetComponentLocation());
 	LatestSpawnedRoom->SetActorRotation(SelectedExitPoint->GetComponentRotation());
