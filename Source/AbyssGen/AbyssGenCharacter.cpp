@@ -12,6 +12,7 @@
 #include "InputActionValue.h"
 #include "AbyssGen.h"
 #include "PDG/Door.h"
+#include "PDG/RB_DungeonElevatorRoom.h"
 
 AAbyssGenCharacter::AAbyssGenCharacter()
 {
@@ -140,6 +141,13 @@ void AAbyssGenCharacter::NotifyActorBeginOverlap(AActor* OtherActor)
 	if (OtherActor && OtherActor->ActorHasTag("InteractableDungeonDoors"))
 	{
 		Cast<ADoor>(OtherActor)->OpenDoor();
+	}
+	else if (OtherActor && OtherActor->ActorHasTag("InteractableElevator"))
+	{
+		if (ARB_DungeonElevatorRoom* ElevatorRoom = Cast<ARB_DungeonElevatorRoom>(OtherActor))
+		{
+			ElevatorRoom->ToggleElevator();
+		}
 	}
 }
 
