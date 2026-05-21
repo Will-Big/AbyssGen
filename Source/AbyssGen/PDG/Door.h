@@ -4,23 +4,24 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
+#include "Interactable.h"
 #include "Door.generated.h"
 
 class UBoxComponent;
 
 UCLASS()
-class ABYSSGEN_API ADoor : public AActor
+class ABYSSGEN_API ADoor : public AActor, public IInteractable
 {
 	GENERATED_BODY()
-	
-public:	
+
+public:
 	ADoor();
 
 	virtual void Tick(float DeltaTime) override;
 
-	void OpenDoor();
-
-	void CloseDoor();
+	/** IInteractable */
+	virtual void OnInteractorEnter_Implementation(AActor* Interactor) override;
+	virtual void OnInteractorExit_Implementation(AActor* Interactor) override;
 
 protected:
 	virtual void BeginPlay() override;

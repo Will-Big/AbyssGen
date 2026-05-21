@@ -11,8 +11,7 @@
 #include "EnhancedInputSubsystems.h"
 #include "InputActionValue.h"
 #include "AbyssGen.h"
-#include "PDG/Door.h"
-#include "PDG/RB_DungeonElevatorRoom.h"
+#include "Interactable.h"
 
 AAbyssGenCharacter::AAbyssGenCharacter()
 {
@@ -138,16 +137,9 @@ void AAbyssGenCharacter::NotifyActorBeginOverlap(AActor* OtherActor)
 {
 	Super::NotifyActorBeginOverlap(OtherActor);
 
-	if (OtherActor && OtherActor->ActorHasTag("InteractableDungeonDoors"))
+	if (OtherActor && OtherActor->Implements<UInteractable>())
 	{
-		Cast<ADoor>(OtherActor)->OpenDoor();
-	}
-	else if (OtherActor && OtherActor->ActorHasTag("InteractableElevator"))
-	{
-		if (ARB_DungeonElevatorRoom* ElevatorRoom = Cast<ARB_DungeonElevatorRoom>(OtherActor))
-		{
-			ElevatorRoom->ToggleElevator();
-		}
+		IInteractable::Execute_OnInteractorEnter(OtherActor, this);
 	}
 }
 
@@ -155,8 +147,8 @@ void AAbyssGenCharacter::NotifyActorEndOverlap(AActor* OtherActor)
 {
 	Super::NotifyActorEndOverlap(OtherActor);
 
-	if (OtherActor && OtherActor->ActorHasTag("InteractableDungeonDoors"))
+	if (OtherActor && OtherActor->Implements<UInteractable>())
 	{
-		Cast<ADoor>(OtherActor)->CloseDoor();
+		IInteractable::Execute_OnInteractorExit(OtherActor, this);
 	}
 }

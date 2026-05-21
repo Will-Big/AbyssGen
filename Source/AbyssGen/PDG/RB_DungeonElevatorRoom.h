@@ -4,11 +4,12 @@
 
 #include "CoreMinimal.h"
 #include "PDG/RoomBase.h"
+#include "Interactable.h"
 #include "RB_DungeonElevatorRoom.generated.h"
 
 
 UCLASS()
-class ABYSSGEN_API ARB_DungeonElevatorRoom : public ARoomBase
+class ABYSSGEN_API ARB_DungeonElevatorRoom : public ARoomBase, public IInteractable
 {
 	GENERATED_BODY()
 
@@ -97,7 +98,11 @@ protected:
 
 	void GoDown();
 
-public:
-	/** 캐릭터가 올라탔을 때 호출 — 현재 상태에 따라 GoUp/GoDown 토글 */
+	/** 현재 상태에 따라 GoUp/GoDown 토글 */
 	void ToggleElevator();
+
+public:
+	/** IInteractable */
+	virtual void OnInteractorEnter_Implementation(AActor* Interactor) override;
+	virtual void OnInteractorExit_Implementation(AActor* Interactor) override;
 };

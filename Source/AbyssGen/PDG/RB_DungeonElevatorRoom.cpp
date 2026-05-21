@@ -109,3 +109,12 @@ void ARB_DungeonElevatorRoom::GoDown()
 	bShouldMove = true;
 	bIsUp = false;
 }
+
+void ARB_DungeonElevatorRoom::OnInteractorEnter_Implementation(AActor* Interactor)
+{
+	ToggleElevator();
+}
+
+void ARB_DungeonElevatorRoom::OnInteractorExit_Implementation(AActor* Interactor)
+{
+}

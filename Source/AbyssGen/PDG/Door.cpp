@@ -42,13 +42,13 @@ void ADoor::BeginPlay()
 	StartLocation = Door->GetRelativeLocation();
 }
 
-void ADoor::OpenDoor()
+void ADoor::OnInteractorEnter_Implementation(AActor* Interactor)
 {
 	EndLocation = StartLocation + FVector(0.0f, 0.0f, -395.0f);
 	bShouldMove = true;
 }
 
-void ADoor::CloseDoor()
+void ADoor::OnInteractorExit_Implementation(AActor* Interactor)
 {
 	EndLocation = StartLocation;
 	bShouldMove = true;
