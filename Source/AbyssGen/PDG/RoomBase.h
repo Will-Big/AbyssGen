@@ -31,6 +31,9 @@ public:
 	UPROPERTY(VisibleAnywhere, Category = "Components")
 	USceneComponent* ExitPointsFolder;
 
+	UPROPERTY(VisibleAnywhere, Category = "Components")
+	USceneComponent* FloorSpawnPoints;
+
 protected:
 	virtual void BeginPlay() override;
 

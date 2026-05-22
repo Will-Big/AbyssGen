@@ -13,6 +13,7 @@ ARoomBase::ARoomBase()
 	GeometryFolder = CreateDefaultSubobject<USceneComponent>(TEXT("GeometryFolder"));
 	OverlapFolder = CreateDefaultSubobject<USceneComponent>(TEXT("OverlapFolder"));
 	ExitPointsFolder = CreateDefaultSubobject<USceneComponent>(TEXT("ExitPointsFolder"));
+	FloorSpawnPoints = CreateDefaultSubobject<USceneComponent>(TEXT("FloorSpawnPoints"));
 
 	Cube_1 = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("Cube_1"));
 	Cube_2 = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("Cube_2"));
@@ -30,8 +31,9 @@ ARoomBase::ARoomBase()
 	GeometryFolder->SetupAttachment(DefaultSceneRoot);
 	OverlapFolder->SetupAttachment(DefaultSceneRoot);
 	ExitPointsFolder->SetupAttachment(DefaultSceneRoot);
-
+	FloorSpawnPoints->SetupAttachment(DefaultSceneRoot);
 	Arrow->SetupAttachment(DefaultSceneRoot);
+
 	Cube_1->SetupAttachment(GeometryFolder);
 	Cube_2->SetupAttachment(GeometryFolder);
 	Cube_3->SetupAttachment(GeometryFolder);
