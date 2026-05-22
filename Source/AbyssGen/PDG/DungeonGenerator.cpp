@@ -96,20 +96,34 @@ void ADungeonGenerator::SpawnNextRoom()
 
 void ADungeonGenerator::RemoveOverlappingRooms()
 {
-	TArray<USceneComponent*> OverlappedRooms;
-	LatestSpawnedRoom->OverlapFolder->GetChildrenComponents(false, OverlappedRooms);
-	
-	TArray<UPrimitiveComponent*> OverlappingComponents;
-	for (USceneComponent* OverlappedRoom : OverlappedRooms)
-	{
-		Cast<UBoxComponent>(OverlappedRoom)->GetOverlappingComponents(OverlappingComponents);
-	}
+	TArray<USceneComponent*> OverlapBoxes;
+	LatestSpawnedRoom->OverlapFolder->GetChildrenComponents(false, OverlapBoxes);
 
-	for (UPrimitiveComponent* OverlappingComponent : OverlappingComponents)
+	for (USceneComponent* OverlapBox : OverlapBoxes)
 	{
-		bCanSpawn = false;
-		RoomAmount++;
-		LatestSpawnedRoom->Destroy();
+		UBoxComponent* Box = Cast<UBoxComponent>(OverlapBox);
+		if (!Box)
+		{
+			continue;
+		}
+
+		// GetOverlappingComponents는 호출 시 배열을 초기화하므로 박스마다 새 배열로 검사
+		TArray<UPrimitiveComponent*> OverlappingComponents;
+		Box->GetOverlappingComponents(OverlappingComponents);
+
+		for (UPrimitiveComponent* OverlappingComponent : OverlappingComponents)
+		{
+			// 같은 방(자기 자신)의 컴포넌트는 무시
+			if (OverlappingComponent->GetOwner() == LatestSpawnedRoom)
+			{
+				continue;
+			}
+
+			bCanSpawn = false;
+			RoomAmount++;
+			LatestSpawnedRoom->Destroy();
+			return;
+		}
 	}
 }
 
