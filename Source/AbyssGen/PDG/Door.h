@@ -8,6 +8,7 @@
 #include "Door.generated.h"
 
 class UBoxComponent;
+class UArrowComponent;
 
 UCLASS()
 class ABYSSGEN_API ADoor : public AActor, public IInteractable
@@ -35,13 +36,16 @@ protected:
 	UPROPERTY(VisibleAnywhere, Category = "Components")
 	UBoxComponent* BoxCollision;
 
-	FVector StartLocation;
+	/** 캐릭터 앞/뒤 판정 기준 — forward가 통로를 관통하는 방향으로 배치 */
+	UPROPERTY(VisibleAnywhere, Category = "Components")
+	UArrowComponent* FacingArrow;
 
-	FVector EndLocation;
+	FRotator StartRotation;
 
-	FVector CurrentLocation;
+	FRotator EndRotation;
 
 	bool bShouldMove;
 
-	float MoveSpeed = 10.0f;
+	/** 회전 보간 속도 */
+	float RotateSpeed = 4.0f;
 };
