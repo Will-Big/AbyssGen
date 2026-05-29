@@ -1,5 +1,4 @@
 #include "PDG/DungeonGenerator.h"
-#include "RB_StarterRoom.h"
 #include "RoomBase.h"
 #include "Components/BoxComponent.h"
 #include "ClosingWall.h"
@@ -53,7 +52,7 @@ void ADungeonGenerator::SetSeed()
 
 void ADungeonGenerator::SpawnStarterRoom()
 {
-	ARB_StarterRoom* SpawnedStarterRoom = this->GetWorld()->SpawnActor<ARB_StarterRoom>(this->StarterRoom);
+	ARoomBase* SpawnedStarterRoom = this->GetWorld()->SpawnActor<ARoomBase>(this->StarterRoom);
 	SpawnedStarterRoom->SetActorLocation(this->GetActorLocation());
 	SpawnedStarterRoom->ExitPointsFolder->GetChildrenComponents(false, this->Exits);
 
@@ -64,8 +63,26 @@ void ADungeonGenerator::SpawnNextRoom()
 {
 	bCanSpawn = true;
 
-	int32 RoomIndex = RandomStream.RandRange(0, RoomsToBeSpawned.Num() - 1);
-	LatestSpawnedRoom = this->GetWorld()->SpawnActor<ARoomBase>(RoomsToBeSpawned[RoomIndex]);
+	// 연결할 출구가 없으면 안전하게 중단
+	if (Exits.Num() == 0)
+	{
+		return;
+	}
+
+	// 특수방 차례(RoomAmount가 10의 배수)이고 특수방이 등록돼 있으면 특수방 풀, 아니면 일반 풀
+	const bool bWantSpecial = (RoomAmount % 10 == 0) && SpecialRoomsToBeSpawned.Num() > 0;
+	TArray<TSubclassOf<ARoomBase>>& Pool = bWantSpecial ? SpecialRoomsToBeSpawned : RoomsToBeSpawned;
+
+	// 스폰할 방 클래스가 하나도 없으면 중단 (빈 배열 인덱싱 크래시 방지)
+	if (Pool.Num() == 0)
+	{
+		GEngine->AddOnScreenDebugMessage(-1, 5.0f, FColor::Yellow,
+			TEXT("SpawnNextRoom 중단: 스폰할 방 클래스 배열이 비어 있음"));
+		return;
+	}
+
+	int32 RoomIndex = RandomStream.RandRange(0, Pool.Num() - 1);
+	LatestSpawnedRoom = this->GetWorld()->SpawnActor<ARoomBase>(Pool[RoomIndex]);
 
 	int32 ExitIndex = RandomStream.RandRange(0, Exits.Num() - 1);
 	USceneComponent* SelectedExitPoint = Exits[ExitIndex];

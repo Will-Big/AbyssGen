@@ -7,7 +7,6 @@
 #include "SpawnPoint.h"
 #include "DungeonGenerator.generated.h"
 
-class ARB_StarterRoom;
 class ARoomBase;
 class AClosingWall;
 class ADoor;
@@ -26,10 +25,13 @@ protected:
 	virtual void BeginPlay() override;
 
 	UPROPERTY(EditAnywhere, Category = "Rooms")
-	TSubclassOf<ARB_StarterRoom> StarterRoom;
+	TSubclassOf<ARoomBase> StarterRoom;
 
 	UPROPERTY(EditAnywhere, Category = "Rooms")
 	TArray<TSubclassOf<ARoomBase>> RoomsToBeSpawned;
+
+	UPROPERTY(EditAnywhere, Category = "Rooms")
+	TArray<TSubclassOf<ARoomBase>> SpecialRoomsToBeSpawned;
 
 	UPROPERTY(EditAnywhere, Category = "Unused Exits Closing Wall")
 	TSubclassOf<AClosingWall> ClosingWall;

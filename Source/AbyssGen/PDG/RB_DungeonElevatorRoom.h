@@ -21,64 +21,7 @@ protected:
 	virtual void Tick(float DeltaTime) override;
 
 	UPROPERTY(VisibleAnywhere, Category = "Components")
-	UArrowComponent* Exit_Arrow_1;
-
-	UPROPERTY(VisibleAnywhere, Category = "Components")
-	UArrowComponent* Exit_Arrow_2;
-
-	UPROPERTY(VisibleAnywhere, Category = "Components")
-	UArrowComponent* Exit_Arrow_3;
-
-	UPROPERTY(VisibleAnywhere, Category = "Components")
-	UArrowComponent* Exit_Arrow_4;
-
-	UPROPERTY(VisibleAnywhere, Category = "Components")
-	UStaticMeshComponent* Floor_1;
-
-	UPROPERTY(VisibleAnywhere, Category = "Components")
-	UStaticMeshComponent* Floor_2;
-
-	UPROPERTY(VisibleAnywhere, Category = "Components")
-	UStaticMeshComponent* Floor_3;
-
-	UPROPERTY(VisibleAnywhere, Category = "Components")
-	UStaticMeshComponent* Floor_4;
-
-	UPROPERTY(VisibleAnywhere, Category = "Components")
-	UStaticMeshComponent* SecondF_Wall_1;
-
-	UPROPERTY(VisibleAnywhere, Category = "Components")
-	UStaticMeshComponent* SecondF_Wall_2;
-
-	UPROPERTY(VisibleAnywhere, Category = "Components")
-	UStaticMeshComponent* SecondF_Wall_3;
-
-	UPROPERTY(VisibleAnywhere, Category = "Components")
-	UStaticMeshComponent* SecondF_Wall_4;
-
-	UPROPERTY(VisibleAnywhere, Category = "Components")
-	UStaticMeshComponent* SecondF_Wall_5;
-
-	UPROPERTY(VisibleAnywhere, Category = "Components")
-	UStaticMeshComponent* SecondF_Wall_6;
-
-	UPROPERTY(VisibleAnywhere, Category = "Components")
-	UStaticMeshComponent* SecondF_Wall_7;
-
-	UPROPERTY(VisibleAnywhere, Category = "Components")
-	UStaticMeshComponent* SecondF_Wall_8;
-
-	UPROPERTY(VisibleAnywhere, Category = "Components")
-	UStaticMeshComponent* Closing_Wall_1;
-
-	UPROPERTY(VisibleAnywhere, Category = "Components")
-	UStaticMeshComponent* Closing_Wall_2;
-
-	UPROPERTY(VisibleAnywhere, Category = "Components")
-	UStaticMeshComponent* Closing_Wall_3;
-
-	UPROPERTY(VisibleAnywhere, Category = "Components")
-	UStaticMeshComponent* Elevator; 
+	UStaticMeshComponent* Elevator;
 
 	UPROPERTY(VisibleAnywhere, Category = "Components")
 	UBoxComponent* ElevatorCollision;
