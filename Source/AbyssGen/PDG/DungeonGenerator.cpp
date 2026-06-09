@@ -8,13 +8,11 @@
 ADungeonGenerator::ADungeonGenerator()
 {
 	PrimaryActorTick.bCanEverTick = true;
-
 }
 
 void ADungeonGenerator::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
-
 }
 
 void ADungeonGenerator::BeginPlay()
@@ -29,6 +27,7 @@ void ADungeonGenerator::BeginPlay()
 
 	SpawnStarterRoom();
 	SpawnNextRoom();
+	SpawnSpecialRooms();
 	this->GetWorld()->GetTimerManager().SetTimer(ExitsHandle, this, &ADungeonGenerator::CloseUnusedExits, 1.0f, false);
 	this->GetWorld()->GetTimerManager().SetTimer(DoorsHandle, this, &ADungeonGenerator::SpawnDoors, 1.0f, false);
 	this->GetWorld()->GetTimerManager().SetTimer(EntitiesHandle, this, &ADungeonGenerator::SpawnEntities, 1.0f, false);
@@ -63,26 +62,13 @@ void ADungeonGenerator::SpawnNextRoom()
 {
 	bCanSpawn = true;
 
-	// 연결할 출구가 없으면 안전하게 중단
-	if (Exits.Num() == 0)
+	if (Exits.Num() == 0 || RoomsToBeSpawned.Num() == 0)
 	{
 		return;
 	}
 
-	// 특수방 차례(RoomAmount가 10의 배수)이고 특수방이 등록돼 있으면 특수방 풀, 아니면 일반 풀
-	const bool bWantSpecial = (RoomAmount % 10 == 0) && SpecialRoomsToBeSpawned.Num() > 0;
-	TArray<TSubclassOf<ARoomBase>>& Pool = bWantSpecial ? SpecialRoomsToBeSpawned : RoomsToBeSpawned;
-
-	// 스폰할 방 클래스가 하나도 없으면 중단 (빈 배열 인덱싱 크래시 방지)
-	if (Pool.Num() == 0)
-	{
-		GEngine->AddOnScreenDebugMessage(-1, 5.0f, FColor::Yellow,
-			TEXT("SpawnNextRoom 중단: 스폰할 방 클래스 배열이 비어 있음"));
-		return;
-	}
-
-	int32 RoomIndex = RandomStream.RandRange(0, Pool.Num() - 1);
-	LatestSpawnedRoom = this->GetWorld()->SpawnActor<ARoomBase>(Pool[RoomIndex]);
+	int32 RoomIndex = RandomStream.RandRange(0, RoomsToBeSpawned.Num() - 1);
+	LatestSpawnedRoom = this->GetWorld()->SpawnActor<ARoomBase>(RoomsToBeSpawned[RoomIndex]);
 
 	int32 ExitIndex = RandomStream.RandRange(0, Exits.Num() - 1);
 	USceneComponent* SelectedExitPoint = Exits[ExitIndex];
@@ -90,12 +76,16 @@ void ADungeonGenerator::SpawnNextRoom()
 	LatestSpawnedRoom->SetActorLocation(SelectedExitPoint->GetComponentLocation());
 	LatestSpawnedRoom->SetActorRotation(SelectedExitPoint->GetComponentRotation());
 
-	DoorList.Add(SelectedExitPoint);
-
-	RemoveOverlappingRooms();
+	if (IsRoomOverlapping(LatestSpawnedRoom))
+	{
+		bCanSpawn = false;
+		RoomAmount++;
+		LatestSpawnedRoom->Destroy();
+	}
 
 	if (bCanSpawn)
 	{
+		DoorList.Add(SelectedExitPoint);
 		Exits.Remove(SelectedExitPoint);
 		TArray<USceneComponent*> LatestRoomExitPoints;
 		LatestSpawnedRoom->ExitPointsFolder->GetChildrenComponents(false, LatestRoomExitPoints);
@@ -103,7 +93,7 @@ void ADungeonGenerator::SpawnNextRoom()
 
 		CollectSpawnPoints(LatestSpawnedRoom);
 	}
-	
+
 	RoomAmount--;
 	if (RoomAmount > 0)
 	{
@@ -111,10 +101,63 @@ void ADungeonGenerator::SpawnNextRoom()
 	}
 }
 
-void ADungeonGenerator::RemoveOverlappingRooms()
+void ADungeonGenerator::SpawnSpecialRooms()
 {
+	if (SpecialRoomsToBeSpawned.Num() == 0 || SpecialRoomAmount <= 0)
+	{
+		return;
+	}
+
+	for (int32 Placed = 0; Placed < SpecialRoomAmount; ++Placed)
+	{
+		if (Exits.Num() == 0)
+		{
+			GEngine->AddOnScreenDebugMessage(-1, 5.0f, FColor::Yellow, TEXT("Special room placement stopped: no remaining exits"));
+			break;
+		}
+
+		TArray<USceneComponent*> Candidates = Exits;
+		bool bPlaced = false;
+
+		while (Candidates.Num() > 0 && !bPlaced)
+		{
+			int32 CandIndex = RandomStream.RandRange(0, Candidates.Num() - 1);
+			USceneComponent* Exit = Candidates[CandIndex];
+			Candidates.RemoveAt(CandIndex);
+
+			int32 ClassIndex = RandomStream.RandRange(0, SpecialRoomsToBeSpawned.Num() - 1);
+			ARoomBase* SpecialRoom = this->GetWorld()->SpawnActor<ARoomBase>(SpecialRoomsToBeSpawned[ClassIndex]);
+			SpecialRoom->SetActorLocation(Exit->GetComponentLocation());
+			SpecialRoom->SetActorRotation(Exit->GetComponentRotation());
+
+			if (IsRoomOverlapping(SpecialRoom))
+			{
+				SpecialRoom->Destroy();
+				continue;
+			}
+
+			DoorList.Add(Exit);
+			Exits.Remove(Exit);
+			CollectSpawnPoints(SpecialRoom);
+			bPlaced = true;
+		}
+
+		if (!bPlaced)
+		{
+			GEngine->AddOnScreenDebugMessage(-1, 5.0f, FColor::Yellow, TEXT("Special room placement failed: no non-overlapping exit"));
+		}
+	}
+}
+
+bool ADungeonGenerator::IsRoomOverlapping(ARoomBase* Room) const
+{
+	if (!Room)
+	{
+		return false;
+	}
+
 	TArray<USceneComponent*> OverlapBoxes;
-	LatestSpawnedRoom->OverlapFolder->GetChildrenComponents(false, OverlapBoxes);
+	Room->OverlapFolder->GetChildrenComponents(false, OverlapBoxes);
 
 	for (USceneComponent* OverlapBox : OverlapBoxes)
 	{
@@ -124,24 +167,19 @@ void ADungeonGenerator::RemoveOverlappingRooms()
 			continue;
 		}
 
-		// GetOverlappingComponents는 호출 시 배열을 초기화하므로 박스마다 새 배열로 검사
 		TArray<UPrimitiveComponent*> OverlappingComponents;
 		Box->GetOverlappingComponents(OverlappingComponents);
 
 		for (UPrimitiveComponent* OverlappingComponent : OverlappingComponents)
 		{
-			// 같은 방(자기 자신)의 컴포넌트는 무시
-			if (OverlappingComponent->GetOwner() == LatestSpawnedRoom)
+			if (OverlappingComponent->GetOwner() != Room)
 			{
-				continue;
+				return true;
 			}
-
-			bCanSpawn = false;
-			RoomAmount++;
-			LatestSpawnedRoom->Destroy();
-			return;
 		}
 	}
+
+	return false;
 }
 
 void ADungeonGenerator::CloseUnusedExits()
@@ -149,10 +187,10 @@ void ADungeonGenerator::CloseUnusedExits()
 	for (USceneComponent* Exit : Exits)
 	{
 		AClosingWall* LatestClosingWall = this->GetWorld()->SpawnActor<AClosingWall>(ClosingWall);
-		
+
 		FVector RelativeOffset(0.0f, 0.0f, 100.0f);
 		FVector WorldOffset = Exit->GetComponentRotation().RotateVector(RelativeOffset);
-		
+
 		LatestClosingWall->SetActorLocation(Exit->GetComponentLocation() + WorldOffset);
 		LatestClosingWall->SetActorRotation(Exit->GetComponentRotation() + FRotator(0.0f, 90.0f, 0.0f));
 	}
@@ -186,6 +224,9 @@ void ADungeonGenerator::CollectSpawnPoints(AActor* Room)
 
 void ADungeonGenerator::SpawnEntities()
 {
+	TSet<FName> SpawnedUniqueTags;
+	TSet<FString> SpawnedRoomUniqueKeys;
+
 	for (USpawnPointComponent* Point : SpawnPoints)
 	{
 		if (!Point)
@@ -193,14 +234,39 @@ void ADungeonGenerator::SpawnEntities()
 			continue;
 		}
 
-		const FSpawnTable* Table = SpawnTables.Find(Point->Category);
+		if (!Point->bSpawnOnDungeonGeneration)
+		{
+			continue;
+		}
+
+		const FSpawnTable* Table = ResolveSpawnTable(Point);
 		if (!Table || Table->Classes.Num() == 0)
 		{
 			continue;
 		}
 
-		// 포인트별 확률 굴림 — 탈락하면 이 포인트는 비움
-		if (RandomStream.FRand() > Table->SpawnChance)
+		const FName SpawnKey = Point->SpawnTag.IsNone()
+			? FName(*UEnum::GetValueAsString(Point->ContentType))
+			: Point->SpawnTag;
+
+		if (Point->Requirement == ESpawnRequirement::Unique)
+		{
+			if (SpawnedUniqueTags.Contains(SpawnKey))
+			{
+				continue;
+			}
+		}
+		else if (Point->Requirement == ESpawnRequirement::RoomUnique)
+		{
+			const AActor* RoomOwner = Point->GetOwner();
+			const FString RoomKey = FString::Printf(TEXT("%s:%s"), *GetNameSafe(RoomOwner), *SpawnKey.ToString());
+			if (SpawnedRoomUniqueKeys.Contains(RoomKey))
+			{
+				continue;
+			}
+		}
+
+		if (!ShouldSpawnPoint(Point, *Table))
 		{
 			continue;
 		}
@@ -211,31 +277,81 @@ void ADungeonGenerator::SpawnEntities()
 			continue;
 		}
 
-		FVector SpawnLocation = Point->GetComponentLocation();
+		SpawnActorAtPoint(Point, ActorClass);
 
-		// 바닥 스냅 — 아래로 라인트레이스해 바닥 표면을 찾음
-		if (Point->bSnapToFloor)
+		if (Point->Requirement == ESpawnRequirement::Unique)
 		{
-			const FVector TraceStart = SpawnLocation + FVector(0.0f, 0.0f, 100.0f);
-			const FVector TraceEnd = SpawnLocation - FVector(0.0f, 0.0f, 2000.0f);
-
-			FHitResult Hit;
-			if (this->GetWorld()->LineTraceSingleByChannel(Hit, TraceStart, TraceEnd, ECC_WorldStatic))
-			{
-				SpawnLocation = Hit.Location;
-			}
+			SpawnedUniqueTags.Add(SpawnKey);
 		}
-
-		// 요소별 바닥 오프셋 — 스폰 클래스가 ISpawnable이면 적용
-		AActor* DefaultActor = ActorClass.GetDefaultObject();
-		if (DefaultActor && DefaultActor->Implements<USpawnable>())
+		else if (Point->Requirement == ESpawnRequirement::RoomUnique)
 		{
-			SpawnLocation.Z += ISpawnable::Execute_GetGroundOffset(DefaultActor);
+			const AActor* RoomOwner = Point->GetOwner();
+			const FString RoomKey = FString::Printf(TEXT("%s:%s"), *GetNameSafe(RoomOwner), *SpawnKey.ToString());
+			SpawnedRoomUniqueKeys.Add(RoomKey);
 		}
-
-		this->GetWorld()->SpawnActor<AActor>(ActorClass, SpawnLocation, Point->GetComponentRotation());
 	}
 }
 
+const FSpawnTable* ADungeonGenerator::ResolveSpawnTable(const USpawnPointComponent* Point) const
+{
+	if (!Point)
+	{
+		return nullptr;
+	}
 
+	if (!Point->SpawnTag.IsNone())
+	{
+		if (const FSpawnTable* TaggedTable = TaggedSpawnTables.Find(Point->SpawnTag))
+		{
+			return TaggedTable;
+		}
+	}
 
+	return DefaultSpawnTables.Find(Point->ContentType);
+}
+
+bool ADungeonGenerator::ShouldSpawnPoint(const USpawnPointComponent* Point, const FSpawnTable& Table)
+{
+	if (!Point)
+	{
+		return false;
+	}
+
+	if (Point->Requirement != ESpawnRequirement::Optional)
+	{
+		return true;
+	}
+
+	const float CombinedChance = FMath::Clamp(Point->SpawnChance * Table.SpawnChance, 0.0f, 1.0f);
+	return RandomStream.FRand() <= CombinedChance;
+}
+
+void ADungeonGenerator::SpawnActorAtPoint(const USpawnPointComponent* Point, TSubclassOf<AActor> ActorClass)
+{
+	if (!Point || !ActorClass)
+	{
+		return;
+	}
+
+	FVector SpawnLocation = Point->GetComponentLocation();
+
+	if (Point->bSnapToFloor)
+	{
+		const FVector TraceStart = SpawnLocation + FVector(0.0f, 0.0f, 100.0f);
+		const FVector TraceEnd = SpawnLocation - FVector(0.0f, 0.0f, 2000.0f);
+
+		FHitResult Hit;
+		if (this->GetWorld()->LineTraceSingleByChannel(Hit, TraceStart, TraceEnd, ECC_WorldStatic))
+		{
+			SpawnLocation = Hit.Location;
+		}
+	}
+
+	AActor* DefaultActor = ActorClass.GetDefaultObject();
+	if (DefaultActor && DefaultActor->Implements<USpawnable>())
+	{
+		SpawnLocation.Z += ISpawnable::Execute_GetGroundOffset(DefaultActor);
+	}
+
+	this->GetWorld()->SpawnActor<AActor>(ActorClass, SpawnLocation, Point->GetComponentRotation());
+}

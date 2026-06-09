@@ -33,6 +33,10 @@ protected:
 	UPROPERTY(EditAnywhere, Category = "Rooms")
 	TArray<TSubclassOf<ARoomBase>> SpecialRoomsToBeSpawned;
 
+	/** 던전당 배치를 보장할 특수방 개수 */
+	UPROPERTY(EditAnywhere, Category = "Rooms")
+	int32 SpecialRoomAmount;
+
 	UPROPERTY(EditAnywhere, Category = "Unused Exits Closing Wall")
 	TSubclassOf<AClosingWall> ClosingWall;
 
@@ -40,7 +44,10 @@ protected:
 	TSubclassOf<ADoor> Door;
 
 	UPROPERTY(EditAnywhere, Category = "Spawning")
-	TMap<ESpawnCategory, FSpawnTable> SpawnTables;
+	TMap<ESpawnContentType, FSpawnTable> DefaultSpawnTables;
+
+	UPROPERTY(EditAnywhere, Category = "Spawning")
+	TMap<FName, FSpawnTable> TaggedSpawnTables;
 
 	UPROPERTY(EditAnywhere, Category = "Dungeon Info")
 	int32 RoomAmount;
@@ -64,7 +71,11 @@ protected:
 
 	void SpawnNextRoom();
 
-	void RemoveOverlappingRooms();
+	/** 일반 방 배치 후 남은 출구에 막다른 특수방을 SpecialRoomAmount개 배치 */
+	void SpawnSpecialRooms();
+
+	/** Room의 겹침 박스가 다른 액터와 겹치는지만 검사 (부수효과 없음) */
+	bool IsRoomOverlapping(ARoomBase* Room) const;
 
 	void CloseUnusedExits();
 
@@ -78,4 +89,10 @@ protected:
 
 	/** 수집된 스폰 포인트마다 확률을 굴려 액터를 스폰 */
 	void SpawnEntities();
+
+	const FSpawnTable* ResolveSpawnTable(const USpawnPointComponent* Point) const;
+
+	bool ShouldSpawnPoint(const USpawnPointComponent* Point, const FSpawnTable& Table);
+
+	void SpawnActorAtPoint(const USpawnPointComponent* Point, TSubclassOf<AActor> ActorClass);
 };

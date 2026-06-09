@@ -12,6 +12,12 @@
 #include "InputActionValue.h"
 #include "AbyssGen.h"
 #include "Interactable.h"
+#include "Combat/HealthComponent.h"
+#include "Combat/PlayerMeleeAttackComponent.h"
+#include "Kismet/GameplayStatics.h"
+#include "GameFramework/PlayerController.h"
+#include "TimerManager.h"
+#include "Engine/World.h"
 
 AAbyssGenCharacter::AAbyssGenCharacter()
 {
@@ -47,8 +53,52 @@ AAbyssGenCharacter::AAbyssGenCharacter()
 	FollowCamera->SetupAttachment(CameraBoom, USpringArmComponent::SocketName);
 	FollowCamera->bUsePawnControlRotation = false;
 
+	// Create the health component (composition): handles HP, damage, death
+	HealthComponent = CreateDefaultSubobject<UHealthComponent>(TEXT("HealthComponent"));
+
+	MeleeAttackComponent = CreateDefaultSubobject<UPlayerMeleeAttackComponent>(TEXT("MeleeAttackComponent"));
+
+	// Tag so enemies recognize the player as a valid damage target
+	Tags.AddUnique(FName("Player"));
+
 	// Note: The skeletal mesh and anim blueprint references on the Mesh component (inherited from Character) 
 	// are set in the derived blueprint asset named ThirdPersonCharacter (to avoid direct content references in C++)
+}
+
+void AAbyssGenCharacter::BeginPlay()
+{
+	Super::BeginPlay();
+
+	if (HealthComponent)
+	{
+		HealthComponent->OnDeath.AddDynamic(this, &AAbyssGenCharacter::HandleDeath);
+	}
+}
+
+void AAbyssGenCharacter::HandleDeath(AActor* DamageCauser)
+{
+	// 이동 정지 + 충돌/입력 차단
+	GetCharacterMovement()->DisableMovement();
+	GetCapsuleComponent()->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+
+	if (APlayerController* PC = Cast<APlayerController>(GetController()))
+	{
+		DisableInput(PC);
+	}
+
+	// 잠시 후 현재 레벨 재시작
+	FTimerHandle DeathRestartTimer;
+	GetWorldTimerManager().SetTimer(DeathRestartTimer, this, &AAbyssGenCharacter::RestartLevel, 3.0f, false);
+}
+
+void AAbyssGenCharacter::RestartLevel()
+{
+	UGameplayStatics::OpenLevel(this, FName(*UGameplayStatics::GetCurrentLevelName(this)));
+}
+
+UHealthComponent* AAbyssGenCharacter::GetHealthComponent_Implementation() const
+{
+	return HealthComponent;
 }
 
 void AAbyssGenCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
@@ -66,6 +116,11 @@ void AAbyssGenCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputC
 
 		// Looking
 		EnhancedInputComponent->BindAction(LookAction, ETriggerEvent::Triggered, this, &AAbyssGenCharacter::Look);
+
+		if (AttackAction)
+		{
+			EnhancedInputComponent->BindAction(AttackAction, ETriggerEvent::Started, this, &AAbyssGenCharacter::Attack);
+		}
 	}
 	else
 	{
@@ -89,6 +144,11 @@ void AAbyssGenCharacter::Look(const FInputActionValue& Value)
 
 	// route the input
 	DoLook(LookAxisVector.X, LookAxisVector.Y);
+}
+
+void AAbyssGenCharacter::Attack()
+{
+	DoAttack();
 }
 
 void AAbyssGenCharacter::DoMove(float Right, float Forward)
@@ -118,6 +178,14 @@ void AAbyssGenCharacter::DoLook(float Yaw, float Pitch)
 		// add yaw and pitch input to controller
 		AddControllerYawInput(Yaw);
 		AddControllerPitchInput(Pitch);
+	}
+}
+
+void AAbyssGenCharacter::DoAttack()
+{
+	if (MeleeAttackComponent)
+	{
+		MeleeAttackComponent->StartAttack();
 	}
 }
 

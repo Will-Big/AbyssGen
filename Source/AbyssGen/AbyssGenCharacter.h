@@ -5,11 +5,14 @@
 #include "CoreMinimal.h"
 #include "GameFramework/Character.h"
 #include "Logging/LogMacros.h"
+#include "Combat/Damageable.h"
 #include "AbyssGenCharacter.generated.h"
 
 class USpringArmComponent;
 class UCameraComponent;
 class UInputAction;
+class UHealthComponent;
+class UPlayerMeleeAttackComponent;
 struct FInputActionValue;
 
 DECLARE_LOG_CATEGORY_EXTERN(LogTemplateCharacter, Log, All);
@@ -19,7 +22,7 @@ DECLARE_LOG_CATEGORY_EXTERN(LogTemplateCharacter, Log, All);
  *  Implements a controllable orbiting camera
  */
 UCLASS(abstract)
-class AAbyssGenCharacter : public ACharacter
+class AAbyssGenCharacter : public ACharacter, public IDamageable
 {
 	GENERATED_BODY()
 
@@ -30,6 +33,13 @@ class AAbyssGenCharacter : public ACharacter
 	/** Follow camera */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="Components", meta = (AllowPrivateAccess = "true"))
 	UCameraComponent* FollowCamera;
+
+	/** 체력 컴포넌트(조합): HP/데미지/사망을 담당 */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="Components", meta = (AllowPrivateAccess = "true"))
+	TObjectPtr<UHealthComponent> HealthComponent;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="Components", meta = (AllowPrivateAccess = "true"))
+	TObjectPtr<UPlayerMeleeAttackComponent> MeleeAttackComponent;
 	
 protected:
 
@@ -49,12 +59,24 @@ protected:
 	UPROPERTY(EditAnywhere, Category="Input")
 	UInputAction* MouseLookAction;
 
+	UPROPERTY(EditAnywhere, Category="Input")
+	UInputAction* AttackAction;
+
 public:
 
 	/** Constructor */
 	AAbyssGenCharacter();	
 
 protected:
+
+	virtual void BeginPlay() override;
+
+	/** 체력 컴포넌트의 OnDeath에 연결되는 사망 처리 */
+	UFUNCTION()
+	void HandleDeath(AActor* DamageCauser);
+
+	/** 사망 후 현재 레벨을 재시작 */
+	void RestartLevel();
 
 	/** Initialize input action bindings */
 	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
@@ -70,6 +92,8 @@ protected:
 	/** Called for looking input */
 	void Look(const FInputActionValue& Value);
 
+	void Attack();
+
 public:
 
 	/** Handles move inputs from either controls or UI interfaces */
@@ -80,6 +104,9 @@ public:
 	UFUNCTION(BlueprintCallable, Category="Input")
 	virtual void DoLook(float Yaw, float Pitch);
 
+	UFUNCTION(BlueprintCallable, Category="Input")
+	virtual void DoAttack();
+
 	/** Handles jump pressed inputs from either controls or UI interfaces */
 	UFUNCTION(BlueprintCallable, Category="Input")
 	virtual void DoJumpStart();
@@ -89,6 +116,10 @@ public:
 	virtual void DoJumpEnd();
 
 public:
+
+	//~ Begin IDamageable interface
+	virtual UHealthComponent* GetHealthComponent_Implementation() const override;
+	//~ End IDamageable interface
 
 	/** Returns CameraBoom subobject **/
 	FORCEINLINE class USpringArmComponent* GetCameraBoom() const { return CameraBoom; }

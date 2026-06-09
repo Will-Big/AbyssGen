@@ -15,6 +15,8 @@ public class AbyssGen : ModuleRules
 			"InputCore",
 			"EnhancedInput",
 			"AIModule",
+			"NavigationSystem",
+			"Niagara",
 			"StateTreeModule",
 			"GameplayStateTreeModule",
 			"UMG",

@@ -45,14 +45,25 @@ void AChest::Tick(float DeltaTime)
 
 void AChest::OnInteractorEnter_Implementation(AActor* Interactor)
 {
-	Open();
+	Open(Interactor);
 }
 
 void AChest::OnInteractorExit_Implementation(AActor* Interactor)
 {
 }
 
-void AChest::Open()
+void AChest::Open(AActor* Interactor)
 {
+	if (bIsOpen)
+	{
+		return;
+	}
+
 	bIsOpen = true;
+	OnChestOpened.Broadcast(this, Interactor);
+}
+
+bool AChest::IsOpen() const
+{
+	return bIsOpen;
 }
