@@ -42,3 +42,7 @@ Saved/Config/
 # Claude Code 로컬 설정
 .claude/
 .mcp.json
+
+# Local planning notes
+PORTFOLIO_PLAN.md
+Portfolio_plan.md
