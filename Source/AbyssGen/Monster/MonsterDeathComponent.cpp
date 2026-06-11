@@ -1,6 +1,7 @@
 #include "Monster/MonsterDeathComponent.h"
 #include "Combat/MeleeAttackComponent.h"
 #include "Monster/SpawnIntroComponent.h"
+#include "Animation/AnimInstance.h"
 #include "Components/CapsuleComponent.h"
 #include "Components/SkeletalMeshComponent.h"
 #include "GameFramework/Character.h"
@@ -13,6 +14,8 @@ UMonsterDeathComponent::UMonsterDeathComponent()
 {
 	PrimaryComponentTick.bCanEverTick = true;
 	PrimaryComponentTick.bStartWithTickEnabled = false;
+
+	DeathMontageEndedDelegate.BindUObject(this, &UMonsterDeathComponent::HandleDeathMontageEnded);
 }
 
 void UMonsterDeathComponent::BeginPlay()
@@ -26,6 +29,7 @@ void UMonsterDeathComponent::EndPlay(const EEndPlayReason::Type EndPlayReason)
 {
 	if (UWorld* World = GetWorld())
 	{
+		World->GetTimerManager().ClearTimer(DeathAnimationTimer);
 		World->GetTimerManager().ClearTimer(DeathRemovalTimer);
 	}
 
@@ -95,27 +99,95 @@ void UMonsterDeathComponent::HandleDeath(AActor* DamageCauser)
 		}
 	}
 
-	StartDeathDissolve();
+	PlayDeathAnimationOrStartDissolve();
+}
 
-	if (!bDestroyOwnerAfterDelay)
+void UMonsterDeathComponent::PlayDeathAnimationOrStartDissolve()
+{
+	if (!OwnerCharacter || !DeathMontage || !OwnerCharacter->GetMesh())
+	{
+		StartDissolveAndScheduleRemoval();
+		return;
+	}
+
+	UAnimInstance* AnimInstance = OwnerCharacter->GetMesh()->GetAnimInstance();
+	if (!AnimInstance)
+	{
+		StartDissolveAndScheduleRemoval();
+		return;
+	}
+
+	if (bStopCurrentMontageOnDeath)
+	{
+		AnimInstance->StopAllMontages(0.05f);
+	}
+
+	const float MontageLength = AnimInstance->Montage_Play(DeathMontage, 1.0f);
+	if (MontageLength <= 0.0f)
+	{
+		StartDissolveAndScheduleRemoval();
+		return;
+	}
+
+	AnimInstance->Montage_SetEndDelegate(DeathMontageEndedDelegate, DeathMontage);
+
+	if (UWorld* World = GetWorld())
+	{
+		const float FallbackDuration = DeathAnimationFallbackDuration > 0.0f
+			? FMath::Min(DeathAnimationFallbackDuration, MontageLength)
+			: MontageLength;
+
+		World->GetTimerManager().SetTimer(
+			DeathAnimationTimer,
+			this,
+			&UMonsterDeathComponent::FinishDeathAnimation,
+			FallbackDuration,
+			false
+		);
+	}
+}
+
+void UMonsterDeathComponent::HandleDeathMontageEnded(UAnimMontage* Montage, bool bInterrupted)
+{
+	if (Montage == DeathMontage)
+	{
+		FinishDeathAnimation();
+	}
+}
+
+void UMonsterDeathComponent::FinishDeathAnimation()
+{
+	if (UWorld* World = GetWorld())
+	{
+		World->GetTimerManager().ClearTimer(DeathAnimationTimer);
+	}
+
+	FreezeOwnerPoseBeforeDissolve();
+	StartDissolveAndScheduleRemoval();
+}
+
+void UMonsterDeathComponent::StartDissolveAndScheduleRemoval()
+{
+	if (bDissolveAndRemovalStarted)
 	{
 		return;
 	}
 
-	if (UWorld* World = GetWorld())
-	{
-		const float RemovalDelay = bUseDissolveOnDeath
-			? FMath::Max(DeathRemovalTime, DeathDissolveDuration)
-			: DeathRemovalTime;
+	bDissolveAndRemovalStarted = true;
+	StartDeathDissolve();
+	ScheduleOwnerRemoval();
+}
 
-		World->GetTimerManager().SetTimer(
-			DeathRemovalTimer,
-			this,
-			&UMonsterDeathComponent::RemoveOwnerFromLevel,
-			RemovalDelay,
-			false
-		);
+void UMonsterDeathComponent::FreezeOwnerPoseBeforeDissolve()
+{
+	if (!bFreezePoseBeforeDissolve || !OwnerCharacter || !OwnerCharacter->GetMesh())
+	{
+		return;
 	}
+
+	USkeletalMeshComponent* Mesh = OwnerCharacter->GetMesh();
+	Mesh->bPauseAnims = true;
+	Mesh->GlobalAnimRateScale = 0.0f;
 }
 
 void UMonsterDeathComponent::StartDeathDissolve()
@@ -137,6 +209,29 @@ void UMonsterDeathComponent::StartDeathDissolve()
 	bDissolvePlaying = true;
 	DissolveElapsedTime = 0.0f;
 	SetComponentTickEnabled(true);
+}
+
+void UMonsterDeathComponent::ScheduleOwnerRemoval()
+{
+	if (!bDestroyOwnerAfterDelay)
+	{
+		return;
+	}
+
+	if (UWorld* World = GetWorld())
+	{
+		const float RemovalDelay = bUseDissolveOnDeath
+			? FMath::Max(DeathRemovalTime, DeathDissolveDuration)
+			: DeathRemovalTime;
+
+		World->GetTimerManager().SetTimer(
+			DeathRemovalTimer,
+			this,
+			&UMonsterDeathComponent::RemoveOwnerFromLevel,
+			RemovalDelay,
+			false
+		);
+	}
 }
 
 void UMonsterDeathComponent::PrepareDissolveMaterials()

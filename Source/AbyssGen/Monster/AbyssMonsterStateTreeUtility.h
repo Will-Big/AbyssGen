@@ -19,6 +19,18 @@ struct FStateTreeAbyssMonsterInstanceData
 };
 
 USTRUCT()
+struct FStateTreeAbyssMonsterAttackPrepareDurationInstanceData
+{
+	GENERATED_BODY()
+
+	UPROPERTY(EditAnywhere, Category = "Context")
+	TObjectPtr<AAbyssMonsterBase> Monster;
+
+	UPROPERTY(VisibleAnywhere, Category = "Output", meta = (Units = "s"))
+	float Duration = 0.0f;
+};
+
+USTRUCT()
 struct FStateTreeAbyssMonsterFindPlayerInstanceData
 {
 	GENERATED_BODY()
@@ -97,6 +109,21 @@ struct FStateTreeAbyssMonsterAttackTask : public FStateTreeTaskCommonBase
 
 	virtual EStateTreeRunStatus EnterState(FStateTreeExecutionContext& Context, const FStateTreeTransitionResult& Transition) const override;
 	virtual void ExitState(FStateTreeExecutionContext& Context, const FStateTreeTransitionResult& Transition) const override;
+
+#if WITH_EDITOR
+	virtual FText GetDescription(const FGuid& ID, FStateTreeDataView InstanceDataView, const IStateTreeBindingLookup& BindingLookup, EStateTreeNodeFormatting Formatting = EStateTreeNodeFormatting::Text) const override;
+#endif
+};
+
+USTRUCT(meta = (DisplayName = "Get Monster Attack Prepare Duration", Category = "Abyss Monster"))
+struct FStateTreeAbyssMonsterAttackPrepareDurationTask : public FStateTreeTaskCommonBase
+{
+	GENERATED_BODY()
+
+	using FInstanceDataType = FStateTreeAbyssMonsterAttackPrepareDurationInstanceData;
+	virtual const UStruct* GetInstanceDataType() const override { return FInstanceDataType::StaticStruct(); }
+
+	virtual EStateTreeRunStatus EnterState(FStateTreeExecutionContext& Context, const FStateTreeTransitionResult& Transition) const override;
 
 #if WITH_EDITOR
 	virtual FText GetDescription(const FGuid& ID, FStateTreeDataView InstanceDataView, const IStateTreeBindingLookup& BindingLookup, EStateTreeNodeFormatting Formatting = EStateTreeNodeFormatting::Text) const override;

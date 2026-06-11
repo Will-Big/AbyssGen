@@ -32,10 +32,16 @@ public:
 
 	/** 진행 중인 공격을 즉시 취소한다(타이머 정리, 종료 통지 없음). */
 	UFUNCTION(BlueprintCallable, Category = "Attack")
-	void CancelAttack();
+	void CancelAttack(bool bBroadcastFinished = false);
+
+	UFUNCTION(BlueprintCallable, Category = "Attack")
+	void ExecuteAttackTrace();
 
 	UFUNCTION(BlueprintPure, Category = "Attack")
 	bool IsAttacking() const { return bIsAttacking; }
+
+	UFUNCTION(BlueprintPure, Category = "Attack")
+	float GetAttackPrepareDuration() const { return AttackPrepareDuration; }
 
 	/** 공격 1회 종료 통지 */
 	UPROPERTY(BlueprintAssignable, Category = "Attack")
@@ -55,7 +61,7 @@ protected:
 	float AttackTraceRadius = 50.0f;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Attack", meta = (ClampMin = "0.0", Units = "s"))
-	float AttackHitDelay = 0.25f;
+	float AttackPrepareDuration = 0.0f;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Attack", meta = (ClampMin = "0.0", Units = "s"))
 	float AttackFallbackDuration = 0.7f;
@@ -85,8 +91,6 @@ private:
 	bool bIsAttacking = false;
 
 	FOnMontageEnded AttackMontageEndedDelegate;
-
-	FTimerHandle AttackHitTimer;
 
 	FTimerHandle AttackFinishTimer;
 

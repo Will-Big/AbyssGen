@@ -40,6 +40,7 @@ float UHealthComponent::ApplyDamage(float DamageAmount, AActor* DamageCauser)
 	const float ActualDamage = OldHealth - CurrentHealth;
 
 	OnHealthChanged.Broadcast(CurrentHealth, MaxHealth);
+	OnDamageTaken.Broadcast(ActualDamage, DamageCauser);
 
 	if (CurrentHealth <= 0.0f)
 	{

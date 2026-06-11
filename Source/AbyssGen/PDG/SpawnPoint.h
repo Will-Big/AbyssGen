@@ -7,6 +7,8 @@
 #include "Templates/SubclassOf.h"
 #include "SpawnPoint.generated.h"
 
+class UWorld;
+
 UENUM(BlueprintType)
 enum class ESpawnContentType : uint8
 {
@@ -64,4 +66,16 @@ public:
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Spawn Point")
 	bool bSpawnOnDungeonGeneration = true;
+
+	/**
+	 *  바닥 스냅 + ISpawnable GroundOffset을 적용한 최종 스폰 위치를 계산한다.
+	 *  DungeonPopulator와 SpecialTreasureRoom이 공유하는 헬퍼.
+	 */
+	static FVector ResolveGroundedSpawnLocation(
+		const UWorld* World,
+		const FVector& BaseLocation,
+		TSubclassOf<AActor> ActorClass,
+		bool bSnapToFloor,
+		float TraceHeight = 100.0f,
+		float TraceDepth = 2000.0f);
 };

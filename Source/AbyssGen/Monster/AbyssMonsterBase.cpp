@@ -8,6 +8,7 @@
 #include "Monster/SpawnIntroComponent.h"
 #include "Monster/MonsterTargetingComponent.h"
 #include "Monster/MonsterDeathComponent.h"
+#include "Monster/MonsterHitReactionComponent.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "Components/CapsuleComponent.h"
 
@@ -40,6 +41,8 @@ AAbyssMonsterBase::AAbyssMonsterBase()
 	TargetingComponent = CreateDefaultSubobject<UMonsterTargetingComponent>(TEXT("TargetingComponent"));
 
 	DeathComponent = CreateDefaultSubobject<UMonsterDeathComponent>(TEXT("DeathComponent"));
+
+	HitReactionComponent = CreateDefaultSubobject<UMonsterHitReactionComponent>(TEXT("HitReactionComponent"));
 }
 
 // Called when the game starts or when spawned
@@ -117,6 +120,11 @@ bool AAbyssMonsterBase::IsAttacking() const
 	return MeleeAttackComponent && MeleeAttackComponent->IsAttacking();
 }
 
+float AAbyssMonsterBase::GetAttackPrepareDuration() const
+{
+	return MeleeAttackComponent ? MeleeAttackComponent->GetAttackPrepareDuration() : 0.0f;
+}
+
 void AAbyssMonsterBase::FaceTarget()
 {
 	if (TargetingComponent)
@@ -133,6 +141,11 @@ UStateTree* AAbyssMonsterBase::GetMonsterStateTree() const
 bool AAbyssMonsterBase::StartAttack()
 {
 	if (!IsAlive() || IsSpawnIntroActive() || !MeleeAttackComponent)
+	{
+		return false;
+	}
+
+	if (HitReactionComponent && HitReactionComponent->IsReacting())
 	{
 		return false;
 	}

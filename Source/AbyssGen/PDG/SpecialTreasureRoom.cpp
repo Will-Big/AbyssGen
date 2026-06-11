@@ -5,7 +5,6 @@
 #include "Monster/AbyssMonsterBase.h"
 #include "PDG/Chest.h"
 #include "PDG/SpawnPoint.h"
-#include "Spawnable.h"
 
 ASpecialTreasureRoom::ASpecialTreasureRoom()
 {
@@ -180,25 +179,11 @@ void ASpecialTreasureRoom::SpawnAmbushVFX(const FVector& SpawnLocation, const FR
 
 FVector ASpecialTreasureRoom::ResolveSpawnLocation(const USpawnPointComponent* Point, TSubclassOf<AActor> ActorClass) const
 {
-	FVector SpawnLocation = Point->GetComponentLocation();
-
-	if (bSnapAmbushSpawnsToFloor)
-	{
-		const FVector TraceStart = SpawnLocation + FVector(0.0f, 0.0f, AmbushGroundTraceHeight);
-		const FVector TraceEnd = SpawnLocation - FVector(0.0f, 0.0f, AmbushGroundTraceDepth);
-
-		FHitResult Hit;
-		if (GetWorld()->LineTraceSingleByChannel(Hit, TraceStart, TraceEnd, ECC_WorldStatic))
-		{
-			SpawnLocation = Hit.Location;
-		}
-	}
-
-	AActor* DefaultActor = ActorClass.GetDefaultObject();
-	if (DefaultActor && DefaultActor->Implements<USpawnable>())
-	{
-		SpawnLocation.Z += ISpawnable::Execute_GetGroundOffset(DefaultActor);
-	}
-
-	return SpawnLocation;
+	return USpawnPointComponent::ResolveGroundedSpawnLocation(
+		GetWorld(),
+		Point->GetComponentLocation(),
+		ActorClass,
+		bSnapAmbushSpawnsToFloor,
+		AmbushGroundTraceHeight,
+		AmbushGroundTraceDepth);
 }

@@ -44,17 +44,6 @@ bool UPlayerMeleeAttackComponent::StartAttack()
 		FaceControllerYaw();
 	}
 
-	if (UWorld* World = GetWorld())
-	{
-		World->GetTimerManager().SetTimer(
-			AttackHitTimer,
-			this,
-			&UPlayerMeleeAttackComponent::PerformAttackTrace,
-			AttackHitDelay,
-			false
-		);
-	}
-
 	if (AttackMontage && OwnerCharacter->GetMesh())
 	{
 		if (UAnimInstance* AnimInstance = OwnerCharacter->GetMesh()->GetAnimInstance())
@@ -86,11 +75,20 @@ void UPlayerMeleeAttackComponent::CancelAttack()
 {
 	if (UWorld* World = GetWorld())
 	{
-		World->GetTimerManager().ClearTimer(AttackHitTimer);
 		World->GetTimerManager().ClearTimer(AttackFinishTimer);
 	}
 
 	bIsAttacking = false;
+}
+
+void UPlayerMeleeAttackComponent::ExecuteAttackTrace()
+{
+	if (!bIsAttacking)
+	{
+		return;
+	}
+
+	PerformAttackTrace();
 }
 
 void UPlayerMeleeAttackComponent::PerformAttackTrace()

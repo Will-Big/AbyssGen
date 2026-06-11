@@ -28,7 +28,6 @@ void UMeleeAttackComponent::EndPlay(const EEndPlayReason::Type EndPlayReason)
 {
 	if (UWorld* World = GetWorld())
 	{
-		World->GetTimerManager().ClearTimer(AttackHitTimer);
 		World->GetTimerManager().ClearTimer(AttackFinishTimer);
 	}
 
@@ -46,14 +45,6 @@ bool UMeleeAttackComponent::StartAttack(AActor* Target)
 	CurrentTarget = Target;
 
 	FaceTarget();
-
-	GetWorld()->GetTimerManager().SetTimer(
-		AttackHitTimer,
-		this,
-		&UMeleeAttackComponent::PerformMeleeAttackTrace,
-		AttackHitDelay,
-		false
-	);
 
 	if (AttackMontage && OwnerCharacter->GetMesh())
 	{
@@ -79,16 +70,31 @@ bool UMeleeAttackComponent::StartAttack(AActor* Target)
 	return true;
 }
 
-void UMeleeAttackComponent::CancelAttack()
+void UMeleeAttackComponent::CancelAttack(bool bBroadcastFinished)
 {
 	if (UWorld* World = GetWorld())
 	{
-		World->GetTimerManager().ClearTimer(AttackHitTimer);
 		World->GetTimerManager().ClearTimer(AttackFinishTimer);
 	}
 
+	const bool bWasAttacking = bIsAttacking;
 	bIsAttacking = false;
 	CurrentTarget = nullptr;
+
+	if (bWasAttacking && bBroadcastFinished)
+	{
+		OnAttackFinished.Broadcast();
+	}
+}
+
+void UMeleeAttackComponent::ExecuteAttackTrace()
+{
+	if (!bIsAttacking)
+	{
+		return;
+	}
+
+	PerformMeleeAttackTrace();
 }
 
 void UMeleeAttackComponent::PerformMeleeAttackTrace()

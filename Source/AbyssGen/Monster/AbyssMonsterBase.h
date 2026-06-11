@@ -17,6 +17,7 @@ class UMeleeAttackComponent;
 class UMonsterTargetingComponent;
 class USpawnIntroComponent;
 class UMonsterDeathComponent;
+class UMonsterHitReactionComponent;
 
 UCLASS()
 class ABYSSGEN_API AAbyssMonsterBase : public ACharacter, public ISpawnable, public IDamageable
@@ -52,6 +53,9 @@ public:
 
 	UFUNCTION(BlueprintPure, Category = "Monster|Combat")
 	bool IsAttacking() const;
+
+	UFUNCTION(BlueprintPure, Category = "Monster|Combat")
+	float GetAttackPrepareDuration() const;
 
 	UFUNCTION(BlueprintCallable, Category = "Monster|Combat")
 	void FaceTarget();
@@ -101,6 +105,9 @@ protected:
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Monster|Death")
 	TObjectPtr<UMonsterDeathComponent> DeathComponent;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Monster|Hit Reaction")
+	TObjectPtr<UMonsterHitReactionComponent> HitReactionComponent;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Monster|AI")
 	TObjectPtr<UStateTree> MonsterStateTree;

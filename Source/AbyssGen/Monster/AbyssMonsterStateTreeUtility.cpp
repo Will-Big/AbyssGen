@@ -144,6 +144,28 @@ FText FStateTreeAbyssMonsterAttackTask::GetDescription(const FGuid& ID, FStateTr
 }
 #endif
 
+EStateTreeRunStatus FStateTreeAbyssMonsterAttackPrepareDurationTask::EnterState(FStateTreeExecutionContext& Context, const FStateTreeTransitionResult& Transition) const
+{
+	FInstanceDataType& InstanceData = Context.GetInstanceData(*this);
+
+	InstanceData.Duration = 0.0f;
+
+	if (!InstanceData.Monster)
+	{
+		return EStateTreeRunStatus::Failed;
+	}
+
+	InstanceData.Duration = InstanceData.Monster->GetAttackPrepareDuration();
+	return EStateTreeRunStatus::Succeeded;
+}
+
+#if WITH_EDITOR
+FText FStateTreeAbyssMonsterAttackPrepareDurationTask::GetDescription(const FGuid& ID, FStateTreeDataView InstanceDataView, const IStateTreeBindingLookup& BindingLookup, EStateTreeNodeFormatting Formatting) const
+{
+	return FText::FromString("<b>Get Monster Attack Prepare Duration</b>");
+}
+#endif
+
 bool FStateTreeAbyssMonsterHasTargetCondition::TestCondition(FStateTreeExecutionContext& Context) const
 {
 	const FInstanceDataType& InstanceData = Context.GetInstanceData(*this);

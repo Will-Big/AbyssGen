@@ -8,6 +8,7 @@
 
 /** 체력 변화 시 (현재 체력, 최대 체력) */
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnHealthChangedSignature, float, CurrentHealth, float, MaxHealth);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnDamageTakenSignature, float, DamageAmount, AActor*, DamageCauser);
 
 /** 사망 시 (가해자) */
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnDeathSignature, AActor*, DamageCauser);
@@ -56,6 +57,9 @@ public:
 	/** 체력 변화 이벤트 (UI/연출이 구독) */
 	UPROPERTY(BlueprintAssignable, Category = "Health")
 	FOnHealthChangedSignature OnHealthChanged;
+
+	UPROPERTY(BlueprintAssignable, Category = "Health")
+	FOnDamageTakenSignature OnDamageTaken;
 
 	/** 사망 이벤트 (소유 액터/연출이 구독) */
 	UPROPERTY(BlueprintAssignable, Category = "Health")

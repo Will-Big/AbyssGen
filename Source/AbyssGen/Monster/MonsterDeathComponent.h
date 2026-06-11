@@ -6,6 +6,7 @@
 #include "MonsterDeathComponent.generated.h"
 
 class ACharacter;
+class UAnimMontage;
 class UMaterialInstanceDynamic;
 
 UCLASS(ClassGroup = (Monster), meta = (BlueprintSpawnableComponent))
@@ -46,6 +47,18 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Death")
 	bool bDestroyOwnerAfterDelay = true;
 
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Death|Animation")
+	TObjectPtr<UAnimMontage> DeathMontage;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Death|Animation")
+	bool bStopCurrentMontageOnDeath = true;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Death|Animation", meta = (ClampMin = "0.0", Units = "s"))
+	float DeathAnimationFallbackDuration = 1.0f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Death|Animation")
+	bool bFreezePoseBeforeDissolve = true;
+
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Death|Dissolve")
 	bool bUseDissolveOnDeath = true;
 
@@ -72,11 +85,29 @@ private:
 
 	bool bDissolvePlaying = false;
 
+	bool bDissolveAndRemovalStarted = false;
+
 	float DissolveElapsedTime = 0.0f;
+
+	FOnMontageEnded DeathMontageEndedDelegate;
+
+	FTimerHandle DeathAnimationTimer;
 
 	FTimerHandle DeathRemovalTimer;
 
+	void PlayDeathAnimationOrStartDissolve();
+
+	void HandleDeathMontageEnded(UAnimMontage* Montage, bool bInterrupted);
+
+	void FinishDeathAnimation();
+
+	void StartDissolveAndScheduleRemoval();
+
+	void FreezeOwnerPoseBeforeDissolve();
+
 	void StartDeathDissolve();
+
+	void ScheduleOwnerRemoval();
 
 	void PrepareDissolveMaterials();
 

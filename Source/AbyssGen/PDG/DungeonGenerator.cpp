@@ -3,34 +3,35 @@
 #include "Components/BoxComponent.h"
 #include "ClosingWall.h"
 #include "Door.h"
-#include "Spawnable.h"
+#include "PDG/DungeonPopulatorComponent.h"
 
 ADungeonGenerator::ADungeonGenerator()
 {
-	PrimaryActorTick.bCanEverTick = true;
-}
+	PrimaryActorTick.bCanEverTick = false;
 
-void ADungeonGenerator::Tick(float DeltaTime)
-{
-	Super::Tick(DeltaTime);
+	PopulatorComponent = CreateDefaultSubobject<UDungeonPopulatorComponent>(TEXT("PopulatorComponent"));
 }
 
 void ADungeonGenerator::BeginPlay()
 {
 	Super::BeginPlay();
 
-	FTimerHandle ExitsHandle;
-	FTimerHandle DoorsHandle;
-	FTimerHandle EntitiesHandle;
-
 	SetSeed();
 
 	SpawnStarterRoom();
 	SpawnNextRoom();
 	SpawnSpecialRooms();
-	this->GetWorld()->GetTimerManager().SetTimer(ExitsHandle, this, &ADungeonGenerator::CloseUnusedExits, 1.0f, false);
-	this->GetWorld()->GetTimerManager().SetTimer(DoorsHandle, this, &ADungeonGenerator::SpawnDoors, 1.0f, false);
-	this->GetWorld()->GetTimerManager().SetTimer(EntitiesHandle, this, &ADungeonGenerator::SpawnEntities, 1.0f, false);
+
+	// 레이아웃은 동기적으로 끝나지만, 스폰된 방들의 콜리전 오버랩이 다음 틱에 정리되므로
+	// 마감 단계(벽/문/엔티티 배치)는 다음 틱에 정해진 순서의 단일 콜백으로 실행한다.
+	GetWorldTimerManager().SetTimerForNextTick(this, &ADungeonGenerator::FinalizeDungeon);
+}
+
+void ADungeonGenerator::FinalizeDungeon()
+{
+	CloseUnusedExits();
+	SpawnDoors();
+	BeginPopulate();
 }
 
 void ADungeonGenerator::SetSeed()
@@ -51,47 +52,42 @@ void ADungeonGenerator::SetSeed()
 
 void ADungeonGenerator::SpawnStarterRoom()
 {
-	ARoomBase* SpawnedStarterRoom = this->GetWorld()->SpawnActor<ARoomBase>(this->StarterRoom);
-	SpawnedStarterRoom->SetActorLocation(this->GetActorLocation());
-	SpawnedStarterRoom->ExitPointsFolder->GetChildrenComponents(false, this->Exits);
+	ARoomBase* SpawnedStarterRoom = GetWorld()->SpawnActor<ARoomBase>(StarterRoom);
+	SpawnedStarterRoom->SetActorLocation(GetActorLocation());
+	SpawnedStarterRoom->ExitPointsFolder->GetChildrenComponents(false, Exits);
 
-	CollectSpawnPoints(SpawnedStarterRoom);
+	PopulatorComponent->CollectFrom(SpawnedStarterRoom);
 }
 
 void ADungeonGenerator::SpawnNextRoom()
 {
-	bCanSpawn = true;
-
 	if (Exits.Num() == 0 || RoomsToBeSpawned.Num() == 0)
 	{
 		return;
 	}
 
-	int32 RoomIndex = RandomStream.RandRange(0, RoomsToBeSpawned.Num() - 1);
-	LatestSpawnedRoom = this->GetWorld()->SpawnActor<ARoomBase>(RoomsToBeSpawned[RoomIndex]);
+	const int32 RoomIndex = RandomStream.RandRange(0, RoomsToBeSpawned.Num() - 1);
+	ARoomBase* NewRoom = GetWorld()->SpawnActor<ARoomBase>(RoomsToBeSpawned[RoomIndex]);
 
-	int32 ExitIndex = RandomStream.RandRange(0, Exits.Num() - 1);
-	USceneComponent* SelectedExitPoint = Exits[ExitIndex];
+	USceneComponent* SelectedExit = Exits[RandomStream.RandRange(0, Exits.Num() - 1)];
+	NewRoom->SetActorLocationAndRotation(SelectedExit->GetComponentLocation(), SelectedExit->GetComponentRotation());
 
-	LatestSpawnedRoom->SetActorLocation(SelectedExitPoint->GetComponentLocation());
-	LatestSpawnedRoom->SetActorRotation(SelectedExitPoint->GetComponentRotation());
-
-	if (IsRoomOverlapping(LatestSpawnedRoom))
+	if (IsRoomOverlapping(NewRoom))
 	{
-		bCanSpawn = false;
+		// 겹치면 폐기하고 같은 횟수로 재시도
+		NewRoom->Destroy();
 		RoomAmount++;
-		LatestSpawnedRoom->Destroy();
 	}
-
-	if (bCanSpawn)
+	else
 	{
-		DoorList.Add(SelectedExitPoint);
-		Exits.Remove(SelectedExitPoint);
-		TArray<USceneComponent*> LatestRoomExitPoints;
-		LatestSpawnedRoom->ExitPointsFolder->GetChildrenComponents(false, LatestRoomExitPoints);
-		Exits.Append(LatestRoomExitPoints);
+		DoorList.Add(SelectedExit);
+		Exits.Remove(SelectedExit);
 
-		CollectSpawnPoints(LatestSpawnedRoom);
+		TArray<USceneComponent*> NewRoomExits;
+		NewRoom->ExitPointsFolder->GetChildrenComponents(false, NewRoomExits);
+		Exits.Append(NewRoomExits);
+
+		PopulatorComponent->CollectFrom(NewRoom);
 	}
 
 	RoomAmount--;
@@ -126,7 +122,7 @@ void ADungeonGenerator::SpawnSpecialRooms()
 			Candidates.RemoveAt(CandIndex);
 
 			int32 ClassIndex = RandomStream.RandRange(0, SpecialRoomsToBeSpawned.Num() - 1);
-			ARoomBase* SpecialRoom = this->GetWorld()->SpawnActor<ARoomBase>(SpecialRoomsToBeSpawned[ClassIndex]);
+			ARoomBase* SpecialRoom = GetWorld()->SpawnActor<ARoomBase>(SpecialRoomsToBeSpawned[ClassIndex]);
 			SpecialRoom->SetActorLocation(Exit->GetComponentLocation());
 			SpecialRoom->SetActorRotation(Exit->GetComponentRotation());
 
@@ -138,7 +134,7 @@ void ADungeonGenerator::SpawnSpecialRooms()
 
 			DoorList.Add(Exit);
 			Exits.Remove(Exit);
-			CollectSpawnPoints(SpecialRoom);
+			PopulatorComponent->CollectFrom(SpecialRoom);
 			bPlaced = true;
 		}
 
@@ -184,174 +180,46 @@ bool ADungeonGenerator::IsRoomOverlapping(ARoomBase* Room) const
 
 void ADungeonGenerator::CloseUnusedExits()
 {
-	for (USceneComponent* Exit : Exits)
-	{
-		AClosingWall* LatestClosingWall = this->GetWorld()->SpawnActor<AClosingWall>(ClosingWall);
-
-		FVector RelativeOffset(0.0f, 0.0f, 100.0f);
-		FVector WorldOffset = Exit->GetComponentRotation().RotateVector(RelativeOffset);
-
-		LatestClosingWall->SetActorLocation(Exit->GetComponentLocation() + WorldOffset);
-		LatestClosingWall->SetActorRotation(Exit->GetComponentRotation() + FRotator(0.0f, 90.0f, 0.0f));
-	}
+	SpawnActorsAtPoints(Exits, ClosingWall, 100.0f);
 }
 
 void ADungeonGenerator::SpawnDoors()
 {
-	for (USceneComponent* NewDoor : DoorList)
-	{
-		ADoor* LatestDoorSpawned = this->GetWorld()->SpawnActor<ADoor>(Door);
-
-		FVector RelativeOffset(0.0f, 0.0f, 300.0f);
-		FVector WorldOffset = NewDoor->GetComponentRotation().RotateVector(RelativeOffset);
-
-		LatestDoorSpawned->SetActorLocation(NewDoor->GetComponentLocation() + WorldOffset);
-		LatestDoorSpawned->SetActorRotation(NewDoor->GetComponentRotation() + FRotator(0.0f, 90.0f, 0.0f));
-	}
+	SpawnActorsAtPoints(DoorList, Door, 300.0f);
 }
 
-void ADungeonGenerator::CollectSpawnPoints(AActor* Room)
+void ADungeonGenerator::SpawnActorsAtPoints(const TArray<USceneComponent*>& Points, TSubclassOf<AActor> ActorClass, float ZOffset)
 {
-	if (!Room)
+	if (!ActorClass)
 	{
 		return;
 	}
 
-	TArray<USpawnPointComponent*> FoundPoints;
-	Room->GetComponents(FoundPoints);
-	SpawnPoints.Append(FoundPoints);
-}
-
-void ADungeonGenerator::SpawnEntities()
-{
-	TSet<FName> SpawnedUniqueTags;
-	TSet<FString> SpawnedRoomUniqueKeys;
-
-	for (USpawnPointComponent* Point : SpawnPoints)
+	for (USceneComponent* Point : Points)
 	{
 		if (!Point)
 		{
 			continue;
 		}
 
-		if (!Point->bSpawnOnDungeonGeneration)
+		AActor* Spawned = GetWorld()->SpawnActor<AActor>(ActorClass);
+		if (!Spawned)
 		{
 			continue;
 		}
 
-		const FSpawnTable* Table = ResolveSpawnTable(Point);
-		if (!Table || Table->Classes.Num() == 0)
-		{
-			continue;
-		}
+		const FRotator PointRotation = Point->GetComponentRotation();
+		const FVector WorldOffset = PointRotation.RotateVector(FVector(0.0f, 0.0f, ZOffset));
 
-		const FName SpawnKey = Point->SpawnTag.IsNone()
-			? FName(*UEnum::GetValueAsString(Point->ContentType))
-			: Point->SpawnTag;
-
-		if (Point->Requirement == ESpawnRequirement::Unique)
-		{
-			if (SpawnedUniqueTags.Contains(SpawnKey))
-			{
-				continue;
-			}
-		}
-		else if (Point->Requirement == ESpawnRequirement::RoomUnique)
-		{
-			const AActor* RoomOwner = Point->GetOwner();
-			const FString RoomKey = FString::Printf(TEXT("%s:%s"), *GetNameSafe(RoomOwner), *SpawnKey.ToString());
-			if (SpawnedRoomUniqueKeys.Contains(RoomKey))
-			{
-				continue;
-			}
-		}
-
-		if (!ShouldSpawnPoint(Point, *Table))
-		{
-			continue;
-		}
-
-		const TSubclassOf<AActor> ActorClass = Table->Classes[RandomStream.RandRange(0, Table->Classes.Num() - 1)];
-		if (!ActorClass)
-		{
-			continue;
-		}
-
-		SpawnActorAtPoint(Point, ActorClass);
-
-		if (Point->Requirement == ESpawnRequirement::Unique)
-		{
-			SpawnedUniqueTags.Add(SpawnKey);
-		}
-		else if (Point->Requirement == ESpawnRequirement::RoomUnique)
-		{
-			const AActor* RoomOwner = Point->GetOwner();
-			const FString RoomKey = FString::Printf(TEXT("%s:%s"), *GetNameSafe(RoomOwner), *SpawnKey.ToString());
-			SpawnedRoomUniqueKeys.Add(RoomKey);
-		}
+		Spawned->SetActorLocation(Point->GetComponentLocation() + WorldOffset);
+		Spawned->SetActorRotation(PointRotation + FRotator(0.0f, 90.0f, 0.0f));
 	}
 }
 
-const FSpawnTable* ADungeonGenerator::ResolveSpawnTable(const USpawnPointComponent* Point) const
+void ADungeonGenerator::BeginPopulate()
 {
-	if (!Point)
+	if (PopulatorComponent)
 	{
-		return nullptr;
+		PopulatorComponent->Populate(RandomStream);
 	}
-
-	if (!Point->SpawnTag.IsNone())
-	{
-		if (const FSpawnTable* TaggedTable = TaggedSpawnTables.Find(Point->SpawnTag))
-		{
-			return TaggedTable;
-		}
-	}
-
-	return DefaultSpawnTables.Find(Point->ContentType);
-}
-
-bool ADungeonGenerator::ShouldSpawnPoint(const USpawnPointComponent* Point, const FSpawnTable& Table)
-{
-	if (!Point)
-	{
-		return false;
-	}
-
-	if (Point->Requirement != ESpawnRequirement::Optional)
-	{
-		return true;
-	}
-
-	const float CombinedChance = FMath::Clamp(Point->SpawnChance * Table.SpawnChance, 0.0f, 1.0f);
-	return RandomStream.FRand() <= CombinedChance;
-}
-
-void ADungeonGenerator::SpawnActorAtPoint(const USpawnPointComponent* Point, TSubclassOf<AActor> ActorClass)
-{
-	if (!Point || !ActorClass)
-	{
-		return;
-	}
-
-	FVector SpawnLocation = Point->GetComponentLocation();
-
-	if (Point->bSnapToFloor)
-	{
-		const FVector TraceStart = SpawnLocation + FVector(0.0f, 0.0f, 100.0f);
-		const FVector TraceEnd = SpawnLocation - FVector(0.0f, 0.0f, 2000.0f);
-
-		FHitResult Hit;
-		if (this->GetWorld()->LineTraceSingleByChannel(Hit, TraceStart, TraceEnd, ECC_WorldStatic))
-		{
-			SpawnLocation = Hit.Location;
-		}
-	}
-
-	AActor* DefaultActor = ActorClass.GetDefaultObject();
-	if (DefaultActor && DefaultActor->Implements<USpawnable>())
-	{
-		SpawnLocation.Z += ISpawnable::Execute_GetGroundOffset(DefaultActor);
-	}
-
-	this->GetWorld()->SpawnActor<AActor>(ActorClass, SpawnLocation, Point->GetComponentRotation());
 }

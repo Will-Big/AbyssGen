@@ -20,6 +20,9 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Attack")
 	void CancelAttack();
 
+	UFUNCTION(BlueprintCallable, Category = "Attack")
+	void ExecuteAttackTrace();
+
 	UFUNCTION(BlueprintPure, Category = "Attack")
 	bool IsAttacking() const { return bIsAttacking; }
 
@@ -40,9 +43,6 @@ protected:
 	float AttackTraceRadius = 60.0f;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Attack", meta = (ClampMin = "0.0", Units = "s"))
-	float AttackHitDelay = 0.2f;
-
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Attack", meta = (ClampMin = "0.0", Units = "s"))
 	float AttackFallbackDuration = 0.65f;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Attack")
@@ -61,8 +61,6 @@ private:
 	bool bIsAttacking = false;
 
 	FOnMontageEnded AttackMontageEndedDelegate;
-
-	FTimerHandle AttackHitTimer;
 
 	FTimerHandle AttackFinishTimer;
 

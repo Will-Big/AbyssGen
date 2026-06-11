@@ -4,12 +4,13 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
-#include "SpawnPoint.h"
 #include "DungeonGenerator.generated.h"
 
 class ARoomBase;
 class AClosingWall;
 class ADoor;
+class USceneComponent;
+class UDungeonPopulatorComponent;
 
 UCLASS()
 class ABYSSGEN_API ADungeonGenerator : public AActor
@@ -18,8 +19,6 @@ class ABYSSGEN_API ADungeonGenerator : public AActor
 	
 public:	
 	ADungeonGenerator();
-
-	virtual void Tick(float DeltaTime) override;
 
 protected:
 	virtual void BeginPlay() override;
@@ -43,18 +42,11 @@ protected:
 	UPROPERTY(EditAnywhere, Category = "Door")
 	TSubclassOf<ADoor> Door;
 
-	UPROPERTY(EditAnywhere, Category = "Spawning")
-	TMap<ESpawnContentType, FSpawnTable> DefaultSpawnTables;
-
-	UPROPERTY(EditAnywhere, Category = "Spawning")
-	TMap<FName, FSpawnTable> TaggedSpawnTables;
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Spawning")
+	TObjectPtr<UDungeonPopulatorComponent> PopulatorComponent;
 
 	UPROPERTY(EditAnywhere, Category = "Dungeon Info")
 	int32 RoomAmount;
-
-	ARoomBase* LatestSpawnedRoom;
-
-	bool bCanSpawn;
 
 	TArray<USceneComponent*> Exits;
 
@@ -81,18 +73,12 @@ protected:
 
 	void SpawnDoors();
 
-	/** 생성된 방들에서 수집한 스폰 포인트 */
-	TArray<USpawnPointComponent*> SpawnPoints;
+	/** 지정한 지점들마다 액터를 스폰해 (회전 기준 ZOffset + 90도 yaw)로 배치 */
+	void SpawnActorsAtPoints(const TArray<USceneComponent*>& Points, TSubclassOf<AActor> ActorClass, float ZOffset);
 
-	/** 방 액터에서 USpawnPointComponent를 모아 SpawnPoints에 누적 */
-	void CollectSpawnPoints(AActor* Room);
+	/** 레이아웃 완료 후 PopulatorComponent로 콘텐츠 배치를 위임 */
+	void BeginPopulate();
 
-	/** 수집된 스폰 포인트마다 확률을 굴려 액터를 스폰 */
-	void SpawnEntities();
-
-	const FSpawnTable* ResolveSpawnTable(const USpawnPointComponent* Point) const;
-
-	bool ShouldSpawnPoint(const USpawnPointComponent* Point, const FSpawnTable& Table);
-
-	void SpawnActorAtPoint(const USpawnPointComponent* Point, TSubclassOf<AActor> ActorClass);
+	/** 레이아웃 완료 후 다음 틱에 벽/문/엔티티 배치를 마감 */
+	void FinalizeDungeon();
 };
