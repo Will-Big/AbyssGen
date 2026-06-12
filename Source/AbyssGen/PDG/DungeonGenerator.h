@@ -42,6 +42,10 @@ protected:
 	UPROPERTY(EditAnywhere, Category = "Door")
 	TSubclassOf<ADoor> Door;
 
+	/** 연결된 출구(문) 방향에 생성할 토치 */
+	UPROPERTY(EditAnywhere, Category = "Torch")
+	TSubclassOf<AActor> Torch;
+
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Spawning")
 	TObjectPtr<UDungeonPopulatorComponent> PopulatorComponent;
 
@@ -72,6 +76,9 @@ protected:
 	void CloseUnusedExits();
 
 	void SpawnDoors();
+
+	/** 연결된 출구(DoorList)의 Arrow 아래 미리 배치된 스폰포인트 위치에 토치를 생성 */
+	void SpawnTorches();
 
 	/** 지정한 지점들마다 액터를 스폰해 (회전 기준 ZOffset + 90도 yaw)로 배치 */
 	void SpawnActorsAtPoints(const TArray<USceneComponent*>& Points, TSubclassOf<AActor> ActorClass, float ZOffset);

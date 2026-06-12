@@ -60,6 +60,18 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Oscillation", meta = (ClampMin = "0.0", ClampMax = "1.0"))
 	float PhaseOffset = 0.0f;
 
+	/** true면 왕복과 별개로 대상을 SpinAxis 기준 등속 회전시킨다(블레이드 스핀 등). */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Oscillation|Spin")
+	bool bEnableSpin = false;
+
+	/** 등속 회전 축(로컬 기준). 정규화되어 사용됨. 기본 Y축. */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Oscillation|Spin", meta = (EditCondition = "bEnableSpin"))
+	FVector SpinAxis = FVector(0.0f, 1.0f, 0.0f);
+
+	/** 등속 회전 속도(도/초). */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Oscillation|Spin", meta = (EditCondition = "bEnableSpin"))
+	float SpinSpeed = 180.0f;
+
 private:
 	UPROPERTY()
 	TObjectPtr<USceneComponent> TargetComponent;

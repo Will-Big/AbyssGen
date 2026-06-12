@@ -31,6 +31,7 @@ void ADungeonGenerator::FinalizeDungeon()
 {
 	CloseUnusedExits();
 	SpawnDoors();
+	SpawnTorches();
 	BeginPopulate();
 }
 
@@ -186,6 +187,36 @@ void ADungeonGenerator::CloseUnusedExits()
 void ADungeonGenerator::SpawnDoors()
 {
 	SpawnActorsAtPoints(DoorList, Door, 300.0f);
+}
+
+void ADungeonGenerator::SpawnTorches()
+{
+	if (!Torch)
+	{
+		return;
+	}
+
+	// 연결된 출구(문)의 Arrow마다, 그 아래 미리 배치된 스폰포인트 위치/회전에 토치를 생성
+	for (USceneComponent* Exit : DoorList)
+	{
+		if (!Exit)
+		{
+			continue;
+		}
+
+		TArray<USceneComponent*> TorchPoints;
+		Exit->GetChildrenComponents(false, TorchPoints);
+
+		for (USceneComponent* Point : TorchPoints)
+		{
+			if (!Point)
+			{
+				continue;
+			}
+
+			GetWorld()->SpawnActor<AActor>(Torch, Point->GetComponentLocation(), Point->GetComponentRotation());
+		}
+	}
 }
 
 void ADungeonGenerator::SpawnActorsAtPoints(const TArray<USceneComponent*>& Points, TSubclassOf<AActor> ActorClass, float ZOffset)

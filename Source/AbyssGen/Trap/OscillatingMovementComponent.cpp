@@ -41,14 +41,29 @@ void UOscillatingMovementComponent::TickComponent(float DeltaTime, ELevelTick Ti
 	const float Wave = FMath::Sin(Phase);
 	const FVector NormalizedAxis = Axis.GetSafeNormal();
 
+	// 이동(왕복) 채널 — 사인 곡선이라 양 끝에서 감속하는 부드러운 ease 이동
 	if (MotionType == EOscillationMotionType::Translation)
 	{
 		TargetComponent->SetRelativeLocation(InitialRelativeLocation + NormalizedAxis * (Amplitude * Wave));
 	}
-	else
+
+	// 회전 채널 — 왕복 회전(MotionType==Rotation)과 등속 스핀(bEnableSpin)을 합성
+	if (MotionType == EOscillationMotionType::Rotation || bEnableSpin)
 	{
-		const FQuat Oscillation(NormalizedAxis, FMath::DegreesToRadians(Amplitude * Wave));
-		TargetComponent->SetRelativeRotation(InitialRelativeRotation * Oscillation);
+		FQuat FinalRotation = InitialRelativeRotation;
+
+		if (MotionType == EOscillationMotionType::Rotation)
+		{
+			FinalRotation = FinalRotation * FQuat(NormalizedAxis, FMath::DegreesToRadians(Amplitude * Wave));
+		}
+
+		if (bEnableSpin)
+		{
+			const float SpinAngle = FMath::DegreesToRadians(SpinSpeed * ElapsedTime);
+			FinalRotation = FinalRotation * FQuat(SpinAxis.GetSafeNormal(), SpinAngle);
+		}
+
+		TargetComponent->SetRelativeRotation(FinalRotation);
 	}
 }
 
