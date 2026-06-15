@@ -166,6 +166,28 @@ FText FStateTreeAbyssMonsterAttackPrepareDurationTask::GetDescription(const FGui
 }
 #endif
 
+EStateTreeRunStatus FStateTreeAbyssMonsterApproachAcceptanceRadiusTask::EnterState(FStateTreeExecutionContext& Context, const FStateTreeTransitionResult& Transition) const
+{
+	FInstanceDataType& InstanceData = Context.GetInstanceData(*this);
+
+	InstanceData.AcceptanceRadius = 0.0f;
+
+	if (!InstanceData.Monster)
+	{
+		return EStateTreeRunStatus::Failed;
+	}
+
+	InstanceData.AcceptanceRadius = InstanceData.Monster->GetApproachAcceptanceRadius();
+	return EStateTreeRunStatus::Succeeded;
+}
+
+#if WITH_EDITOR
+FText FStateTreeAbyssMonsterApproachAcceptanceRadiusTask::GetDescription(const FGuid& ID, FStateTreeDataView InstanceDataView, const IStateTreeBindingLookup& BindingLookup, EStateTreeNodeFormatting Formatting) const
+{
+	return FText::FromString("<b>Get Monster Approach Acceptance Radius</b>");
+}
+#endif
+
 bool FStateTreeAbyssMonsterHasTargetCondition::TestCondition(FStateTreeExecutionContext& Context) const
 {
 	const FInstanceDataType& InstanceData = Context.GetInstanceData(*this);

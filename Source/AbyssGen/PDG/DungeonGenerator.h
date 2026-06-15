@@ -7,6 +7,7 @@
 #include "DungeonGenerator.generated.h"
 
 class ARoomBase;
+class AEscapeRoom;
 class AClosingWall;
 class ADoor;
 class USceneComponent;
@@ -31,6 +32,13 @@ protected:
 
 	UPROPERTY(EditAnywhere, Category = "Rooms")
 	TArray<TSubclassOf<ARoomBase>> SpecialRoomsToBeSpawned;
+
+	/** 던전마다 정확히 하나 배치할 탈출방 클래스 */
+	UPROPERTY(EditAnywhere, Category = "Rooms")
+	TSubclassOf<AEscapeRoom> EscapeRoomClass;
+
+	UPROPERTY(VisibleInstanceOnly, BlueprintReadOnly, Category = "Rooms")
+	TObjectPtr<AEscapeRoom> SpawnedEscapeRoom;
 
 	/** 던전당 배치를 보장할 특수방 개수 */
 	UPROPERTY(EditAnywhere, Category = "Rooms")
@@ -66,6 +74,9 @@ protected:
 	void SpawnStarterRoom();
 
 	void SpawnNextRoom();
+
+	/** 남은 출구 중 생성기에서 먼 곳부터 시도해 탈출방을 정확히 하나 배치한다. */
+	bool SpawnEscapeRoom();
 
 	/** 일반 방 배치 후 남은 출구에 막다른 특수방을 SpecialRoomAmount개 배치 */
 	void SpawnSpecialRooms();

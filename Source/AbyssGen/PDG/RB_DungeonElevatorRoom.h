@@ -35,7 +35,12 @@ protected:
 	bool bIsUp;
 
 	/** 엘리베이터 이동 속도 (cm/s) */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Elevator", meta = (ClampMin = "0.0", AllowPrivateAccess = "true"))
 	float MoveSpeed = 600.0f;
+
+	/** 상승 시 올라가는 높이 (cm) */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Elevator", meta = (ClampMin = "0.0", AllowPrivateAccess = "true"))
+	float ClimbHeight = 1900.0f;
 
 	void GoUp();
 

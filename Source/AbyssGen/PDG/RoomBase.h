@@ -8,6 +8,8 @@
 
 class UBoxComponent;
 class UArrowComponent;
+class UCanvas;
+class APlayerController;
 
 UCLASS()
 class ABYSSGEN_API ARoomBase : public AActor
@@ -16,8 +18,6 @@ class ABYSSGEN_API ARoomBase : public AActor
 	
 public:	
 	ARoomBase();
-
-	virtual void Tick(float DeltaTime) override;
 
 	UPROPERTY(VisibleAnywhere, Category = "Components")
 	USceneComponent* DefaultSceneRoot;
@@ -34,8 +34,21 @@ public:
 	UPROPERTY(VisibleAnywhere, Category = "Components")
 	USceneComponent* FloorSpawnPoints;
 
+#if WITH_EDITORONLY_DATA
+	UPROPERTY(EditDefaultsOnly, Category = "Debug")
+	bool bShowDebugRoomName = true;
+#endif
+
 protected:
 	virtual void BeginPlay() override;
+	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
+
+#if WITH_EDITORONLY_DATA
+	/** 화면 공간에 방 BP 이름을 그린다(벽에 가려지지 않고 PIE/Simulate 모두 표시). */
+	void DrawRoomNameHUD(UCanvas* Canvas, APlayerController* PC);
+
+	TArray<FDelegateHandle> DebugDrawHandles;
+#endif
 
 	UPROPERTY(VisibleAnywhere, Category = "Components")
 	UBoxComponent* BoxCollision;

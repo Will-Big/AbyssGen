@@ -4,6 +4,7 @@
 #include "ClosingWall.h"
 #include "Door.h"
 #include "PDG/DungeonPopulatorComponent.h"
+#include "PDG/EscapeRoom.h"
 
 ADungeonGenerator::ADungeonGenerator()
 {
@@ -20,6 +21,10 @@ void ADungeonGenerator::BeginPlay()
 
 	SpawnStarterRoom();
 	SpawnNextRoom();
+	if (!SpawnEscapeRoom())
+	{
+		UE_LOG(LogTemp, Error, TEXT("Required escape room could not be placed. Finalizing the remaining dungeon layout without it."));
+	}
 	SpawnSpecialRooms();
 
 	// 레이아웃은 동기적으로 끝나지만, 스폰된 방들의 콜리전 오버랩이 다음 틱에 정리되므로
@@ -96,6 +101,56 @@ void ADungeonGenerator::SpawnNextRoom()
 	{
 		SpawnNextRoom();
 	}
+}
+
+bool ADungeonGenerator::SpawnEscapeRoom()
+{
+	if (!EscapeRoomClass)
+	{
+		UE_LOG(LogTemp, Error, TEXT("EscapeRoomClass is not configured on %s"), *GetName());
+		return false;
+	}
+
+	TArray<USceneComponent*> Candidates = Exits;
+	Candidates.RemoveAll([](const USceneComponent* Exit)
+	{
+		return Exit == nullptr;
+	});
+
+	const FVector DungeonOrigin = GetActorLocation();
+	Candidates.Sort([DungeonOrigin](const USceneComponent& A, const USceneComponent& B)
+	{
+		return FVector::DistSquared(A.GetComponentLocation(), DungeonOrigin)
+			> FVector::DistSquared(B.GetComponentLocation(), DungeonOrigin);
+	});
+
+	for (USceneComponent* Exit : Candidates)
+	{
+		AEscapeRoom* EscapeRoom = GetWorld()->SpawnActor<AEscapeRoom>(
+			EscapeRoomClass,
+			Exit->GetComponentLocation(),
+			Exit->GetComponentRotation());
+
+		if (!EscapeRoom)
+		{
+			continue;
+		}
+
+		if (IsRoomOverlapping(EscapeRoom))
+		{
+			EscapeRoom->Destroy();
+			continue;
+		}
+
+		SpawnedEscapeRoom = EscapeRoom;
+		DoorList.Add(Exit);
+		Exits.Remove(Exit);
+		PopulatorComponent->CollectFrom(EscapeRoom);
+		return true;
+	}
+
+	UE_LOG(LogTemp, Error, TEXT("No remaining exit could fit escape room class %s"), *GetNameSafe(EscapeRoomClass));
+	return false;
 }
 
 void ADungeonGenerator::SpawnSpecialRooms()

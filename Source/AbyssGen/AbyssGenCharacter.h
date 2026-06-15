@@ -121,6 +121,10 @@ public:
 	virtual UHealthComponent* GetHealthComponent_Implementation() const override;
 	//~ End IDamageable interface
 
+	/** 움직이는(Movable) 발판(엘리베이터 등) 위에 올라가 있으면 true. AnimBP에서 Foot IK를 끌 때 사용. */
+	UFUNCTION(BlueprintPure, Category = "Movement")
+	bool IsOnMovingPlatform() const;
+
 	/** Returns CameraBoom subobject **/
 	FORCEINLINE class USpringArmComponent* GetCameraBoom() const { return CameraBoom; }
 

@@ -2,8 +2,10 @@
 
 
 #include "PDG/Chest.h"
+#include "PDG/Coin.h"
 #include "Components/BoxComponent.h"
 #include "Components/StaticMeshComponent.h"
+#include "Engine/World.h"
 
 AChest::AChest()
 {
@@ -60,7 +62,57 @@ void AChest::Open(AActor* Interactor)
 	}
 
 	bIsOpen = true;
+
+	SpawnCoinBurst();
+
 	OnChestOpened.Broadcast(this, Interactor);
+}
+
+void AChest::SpawnCoinBurst()
+{
+	UWorld* World = GetWorld();
+	if (!CoinClass || !World)
+	{
+		return;
+	}
+
+	const int32 Count = FMath::RandRange(FMath::Min(MinCoinCount, MaxCoinCount), FMath::Max(MinCoinCount, MaxCoinCount));
+	if (Count <= 0)
+	{
+		return;
+	}
+
+	const FVector Origin = GetActorLocation() + FVector(0.0f, 0.0f, CoinSpawnHeight);
+
+	FActorSpawnParameters SpawnParams;
+	SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+	SpawnParams.Owner = this;
+
+	for (int32 i = 0; i < Count; ++i)
+	{
+		const FVector Jitter(
+			FMath::FRandRange(-CoinSpawnJitter, CoinSpawnJitter),
+			FMath::FRandRange(-CoinSpawnJitter, CoinSpawnJitter),
+			0.0f);
+
+		ACoin* Coin = World->SpawnActor<ACoin>(CoinClass, Origin + Jitter, FRotator::ZeroRotator, SpawnParams);
+		if (!Coin)
+		{
+			continue;
+		}
+
+		// 위로 솟구치는 속도 + 무작위 수평 방향(원뿔 산포)
+		const float Angle = FMath::FRandRange(0.0f, 2.0f * PI);
+		const float HorizontalSpeed = FMath::FRandRange(0.0f, CoinLaunchHorizontalSpeed);
+		const float UpSpeed = CoinLaunchUpSpeed + FMath::FRandRange(-CoinLaunchUpVariance, CoinLaunchUpVariance);
+
+		const FVector LaunchVelocity(
+			FMath::Cos(Angle) * HorizontalSpeed,
+			FMath::Sin(Angle) * HorizontalSpeed,
+			UpSpeed);
+
+		Coin->Launch(LaunchVelocity);
+	}
 }
 
 bool AChest::IsOpen() const

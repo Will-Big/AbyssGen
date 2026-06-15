@@ -11,6 +11,7 @@
 #include "Monster/MonsterHitReactionComponent.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "Components/CapsuleComponent.h"
+#include "Components/PointLightComponent.h"
 
 // Sets default values
 AAbyssMonsterBase::AAbyssMonsterBase()
@@ -43,6 +44,14 @@ AAbyssMonsterBase::AAbyssMonsterBase()
 	DeathComponent = CreateDefaultSubobject<UMonsterDeathComponent>(TEXT("DeathComponent"));
 
 	HitReactionComponent = CreateDefaultSubobject<UMonsterHitReactionComponent>(TEXT("HitReactionComponent"));
+
+	MonsterPointLight = CreateDefaultSubobject<UPointLightComponent>(TEXT("MonsterPointLight"));
+	MonsterPointLight->SetupAttachment(GetRootComponent());
+	MonsterPointLight->SetRelativeLocation(FVector(0.0f, 0.0f, 50.0f));
+	MonsterPointLight->SetIntensity(250.0f);
+	MonsterPointLight->SetAttenuationRadius(250.0f);
+	MonsterPointLight->SetLightColor(FLinearColor(1.0f, 0.2f, 0.08f));
+	MonsterPointLight->SetCastShadows(false);
 }
 
 // Called when the game starts or when spawned
@@ -123,6 +132,11 @@ bool AAbyssMonsterBase::IsAttacking() const
 float AAbyssMonsterBase::GetAttackPrepareDuration() const
 {
 	return MeleeAttackComponent ? MeleeAttackComponent->GetAttackPrepareDuration() : 0.0f;
+}
+
+float AAbyssMonsterBase::GetApproachAcceptanceRadius() const
+{
+	return TargetingComponent ? TargetingComponent->GetApproachAcceptanceRadius() : 0.0f;
 }
 
 void AAbyssMonsterBase::FaceTarget()

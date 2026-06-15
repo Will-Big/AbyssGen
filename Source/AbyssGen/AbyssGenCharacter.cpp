@@ -14,6 +14,7 @@
 #include "Interactable.h"
 #include "Combat/HealthComponent.h"
 #include "Combat/PlayerMeleeAttackComponent.h"
+#include "Components/PrimitiveComponent.h"
 #include "Kismet/GameplayStatics.h"
 #include "GameFramework/PlayerController.h"
 #include "TimerManager.h"
@@ -99,6 +100,12 @@ void AAbyssGenCharacter::RestartLevel()
 UHealthComponent* AAbyssGenCharacter::GetHealthComponent_Implementation() const
 {
 	return HealthComponent;
+}
+
+bool AAbyssGenCharacter::IsOnMovingPlatform() const
+{
+	const UPrimitiveComponent* Base = GetMovementBase();
+	return Base != nullptr && Base->Mobility == EComponentMobility::Movable;
 }
 
 void AAbyssGenCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)

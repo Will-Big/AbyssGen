@@ -33,6 +33,12 @@ void ACoin::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
 
+	// 물리 드롭 중에는 물리 엔진이 위치/회전을 제어하므로 부양 연출을 멈춘다.
+	if (bPhysicsDrop)
+	{
+		return;
+	}
+
 	ElapsedTime += DeltaTime;
 
 	// 회전 연출
@@ -60,4 +66,24 @@ void ACoin::OnInteractorExit_Implementation(AActor* Interactor)
 float ACoin::GetGroundOffset_Implementation()
 {
 	return HoverHeight;
+}
+
+void ACoin::Launch(const FVector& LaunchVelocity)
+{
+	if (bPhysicsDrop || !CoinMesh)
+	{
+		return;
+	}
+
+	bPhysicsDrop = true;
+
+	// 바닥/서로는 막아 쌓이고, 플레이어와는 충돌하지 않는다(획득은 자식 PickupCollision 트리거가 담당).
+	CoinMesh->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
+	CoinMesh->SetCollisionObjectType(ECC_PhysicsBody);
+	CoinMesh->SetCollisionResponseToAllChannels(ECR_Block);
+	CoinMesh->SetCollisionResponseToChannel(ECC_Pawn, ECR_Ignore);
+	CoinMesh->SetSimulatePhysics(true);
+
+	// bVelChange=true: 질량을 무시하고 속도 변화로 적용(튜닝이 직관적).
+	CoinMesh->AddImpulse(LaunchVelocity, NAME_None, true);
 }

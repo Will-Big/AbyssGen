@@ -28,6 +28,10 @@ public:
 	/** ISpawnable */
 	virtual float GetGroundOffset_Implementation() override;
 
+	/** 물리 드롭 모드로 전환하고 즉시 발사한다(상자 보상 연출 등). LaunchVelocity는 cm/s(질량 무시). */
+	UFUNCTION(BlueprintCallable, Category = "Coin")
+	void Launch(const FVector& LaunchVelocity);
+
 protected:
 	virtual void BeginPlay() override;
 
@@ -61,4 +65,7 @@ private:
 	FVector MeshBaseLocation;
 
 	float ElapsedTime = 0.0f;
+
+	/** true면 물리 시뮬레이션 중(부양 연출 비활성) */
+	bool bPhysicsDrop = false;
 };

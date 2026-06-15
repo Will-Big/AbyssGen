@@ -60,7 +60,7 @@ void ARB_DungeonElevatorRoom::ToggleElevator()
 
 void ARB_DungeonElevatorRoom::GoUp()
 {
-	EndLocation = StartLocation + FVector(0.0f, 0.0f, 1900.0f);
+	EndLocation = StartLocation + FVector(0.0f, 0.0f, ClimbHeight);
 	bShouldMove = true;
 	bIsUp = true;
 }

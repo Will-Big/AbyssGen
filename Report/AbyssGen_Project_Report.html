@@ -1,0 +1,400 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>AbyssGen 프로젝트 보고서</title>
+  <style>
+    :root {
+      --ink: #172033;
+      --muted: #5f6b7c;
+      --line: #d9e0e8;
+      --paper: #ffffff;
+      --accent: #2b6cb0;
+      --accent-dark: #163f68;
+      --accent-soft: #eaf3fb;
+      --green: #24745b;
+      --green-soft: #e8f5ef;
+      --amber: #996515;
+      --amber-soft: #fff5db;
+    }
+
+    * { box-sizing: border-box; }
+    html { background: #eef1f5; }
+    body {
+      margin: 0 auto;
+      max-width: 210mm;
+      color: var(--ink);
+      background: var(--paper);
+      font-family: "Noto Sans KR", "Malgun Gothic", "Apple SD Gothic Neo", sans-serif;
+      font-size: 10.4pt;
+      line-height: 1.75;
+      word-break: keep-all;
+    }
+
+    main { padding: 18mm 17mm 20mm; }
+    h1, h2, h3 { line-height: 1.3; letter-spacing: -0.035em; }
+    h1 { margin: 0; font-size: 29pt; }
+    h2 {
+      margin: 0 0 7mm;
+      padding-bottom: 3mm;
+      font-size: 20pt;
+      color: var(--accent-dark);
+      border-bottom: 2px solid var(--accent);
+    }
+    h3 { margin: 7mm 0 3mm; font-size: 13.5pt; color: var(--accent-dark); }
+    p { margin: 0 0 3.5mm; }
+    strong { color: #102b46; }
+    code {
+      padding: 0.08em 0.3em;
+      border-radius: 3px;
+      background: #edf1f5;
+      font-family: Consolas, "Courier New", monospace;
+      font-size: 0.9em;
+      word-break: break-all;
+    }
+    ul, ol { margin: 2mm 0 4mm; padding-left: 6mm; }
+    li { margin-bottom: 1.5mm; }
+    table { width: 100%; border-collapse: collapse; margin: 4mm 0 6mm; font-size: 9.3pt; }
+    th, td { padding: 2.7mm 3mm; border: 1px solid var(--line); vertical-align: top; }
+    th { color: var(--accent-dark); background: #f3f7fb; text-align: left; }
+    caption { margin-bottom: 2mm; color: var(--muted); text-align: left; font-size: 9pt; }
+
+    .cover {
+      min-height: 250mm;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      padding: 17mm 0 10mm;
+    }
+    .cover::before {
+      content: "";
+      display: block;
+      width: 30mm;
+      height: 4px;
+      margin-bottom: 20mm;
+      background: var(--accent);
+    }
+    .cover-label { color: var(--accent); font-weight: 800; letter-spacing: 0.16em; }
+    .cover h1 { margin-top: 4mm; font-size: 38pt; }
+    .cover .subtitle { max-width: 145mm; margin-top: 7mm; color: var(--muted); font-size: 16pt; line-height: 1.55; }
+    .cover-meta { padding-top: 6mm; border-top: 1px solid var(--line); color: var(--muted); }
+    .cover-meta strong { display: inline-block; min-width: 28mm; }
+
+    .page-break { break-before: page; page-break-before: always; }
+    .keep { break-inside: avoid; page-break-inside: avoid; }
+    .lead { font-size: 12.3pt; line-height: 1.8; color: #27364a; }
+    .eyebrow { margin-bottom: 2mm; color: var(--accent); font-size: 8.5pt; font-weight: 800; letter-spacing: 0.12em; }
+    .note, .summary, .experiment-note {
+      margin: 5mm 0;
+      padding: 4mm 5mm;
+      border-left: 4px solid var(--accent);
+      background: var(--accent-soft);
+    }
+    .summary { font-size: 11pt; }
+    .experiment-note { border-color: var(--amber); background: var(--amber-soft); }
+    .small { color: var(--muted); font-size: 8.8pt; }
+
+    .toc { display: grid; grid-template-columns: 1fr 1fr; gap: 4mm; margin-top: 7mm; }
+    .toc a { display: block; padding: 4mm; border: 1px solid var(--line); color: inherit; text-decoration: none; }
+    .toc b { display: block; color: var(--accent); font-size: 9pt; }
+
+    .cards { display: grid; grid-template-columns: repeat(2, 1fr); gap: 4mm; margin: 5mm 0; }
+    .card { padding: 4mm; border: 1px solid var(--line); border-radius: 5px; background: #fff; break-inside: avoid; }
+    .card h3 { margin: 0 0 2mm; font-size: 12pt; }
+    .card p { margin: 0; color: #3f4d60; }
+    .number { display: block; margin-bottom: 1mm; color: var(--accent); font-size: 18pt; font-weight: 800; }
+
+    .pipeline { display: flex; align-items: stretch; gap: 2mm; margin: 5mm 0; }
+    .pipeline .step { flex: 1; padding: 3mm 2.5mm; border: 1px solid #b9cce0; border-radius: 4px; background: #f7fbff; text-align: center; font-size: 8.5pt; }
+    .pipeline .arrow { display: flex; align-items: center; color: var(--accent); font-weight: 900; }
+
+    .architecture { display: grid; grid-template-columns: 1fr 1fr; gap: 4mm; margin: 5mm 0; }
+    .layer { padding: 4mm; border-radius: 5px; color: #fff; background: var(--accent-dark); }
+    .layer:nth-child(2) { background: var(--green); }
+    .layer:nth-child(3), .layer:nth-child(4) { color: var(--ink); border: 1px solid var(--line); background: #f7f9fb; }
+    .layer b { display: block; margin-bottom: 1.5mm; }
+    .layer code { color: inherit; background: rgba(255,255,255,0.15); }
+
+    .timeline { margin: 6mm 0; border-left: 3px solid #b9cce0; }
+    .event { position: relative; margin: 0 0 5mm 5mm; padding: 0 0 0 4mm; break-inside: avoid; }
+    .event::before { content: ""; position: absolute; left: -10.5mm; top: 2mm; width: 3mm; height: 3mm; border: 2px solid white; border-radius: 50%; background: var(--accent); box-shadow: 0 0 0 1px var(--accent); }
+    .event .tag { color: var(--accent); font-weight: 800; }
+    .event p { margin: 1mm 0 0; }
+
+    .before-after { display: grid; grid-template-columns: 1fr 12mm 1fr; align-items: stretch; gap: 3mm; margin: 5mm 0; }
+    .before-after .panel { padding: 4mm; border: 1px solid var(--line); border-radius: 5px; }
+    .before-after .panel.after { border-color: #9bcbb8; background: var(--green-soft); }
+    .before-after .mid { display: flex; align-items: center; justify-content: center; color: var(--accent); font-size: 22pt; font-weight: 900; }
+
+    .figure-placeholder { margin: 5mm 0; padding: 13mm 8mm; border: 1.5px dashed #9aa9ba; color: var(--muted); background: #fafbfc; text-align: center; }
+    .figure-placeholder b { display: block; margin-bottom: 2mm; color: #3c4d61; }
+    figure { margin: 5mm 0 6mm; break-inside: avoid; page-break-inside: avoid; }
+    figure img { display: block; width: 100%; max-height: 108mm; object-fit: cover; border: 1px solid var(--line); border-radius: 5px; }
+    figcaption { margin-top: 2mm; color: var(--muted); font-size: 8.8pt; text-align: center; }
+    .image-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 4mm; margin: 5mm 0 6mm; }
+    .image-grid figure { margin: 0; }
+    .image-grid figure img { height: 67mm; }
+    .result-ok { color: var(--green); font-weight: 800; }
+    .result-check { color: var(--amber); font-weight: 800; }
+    .conclusion-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 4mm; margin-top: 5mm; }
+    .conclusion-grid div { padding: 4mm; border-top: 3px solid var(--accent); background: #f6f8fa; }
+
+    footer.print-footer { display: none; }
+
+    @page { size: A4; margin: 13mm 14mm 15mm; }
+    @media print {
+      html, body { background: #fff; }
+      body { max-width: none; font-size: 9.7pt; }
+      main { padding: 0; }
+      .cover { min-height: 263mm; }
+      a { color: inherit; }
+      .no-print { display: none; }
+      h2, h3 { break-after: avoid; page-break-after: avoid; }
+      table, .card, .layer, .event { break-inside: avoid; page-break-inside: avoid; }
+    }
+    @media (max-width: 720px) {
+      main { padding: 24px; }
+      .cards, .toc, .architecture, .conclusion-grid { grid-template-columns: 1fr; }
+      .pipeline { flex-direction: column; }
+      .pipeline .arrow { justify-content: center; transform: rotate(90deg); }
+      .before-after { grid-template-columns: 1fr; }
+      .before-after .mid { transform: rotate(90deg); }
+      .image-grid { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+<main>
+  <section class="cover">
+    <div>
+      <div class="cover-label">PROJECT TECHNICAL REPORT</div>
+      <h1>AbyssGen</h1>
+      <p class="subtitle">절차적 던전 생성에서 전투·AI·함정·콘텐츠 배치까지 확장한 Unreal Engine 5 게임 프로젝트</p>
+    </div>
+    <div class="cover-meta">
+      <p><strong>문서 유형</strong> 프로젝트 기술 보고서</p>
+      <p><strong>프로젝트</strong> Unreal Engine 5 절차적 던전 생성 게임</p>
+      <p><strong>작성일</strong> 2026년 6월 12일</p>
+    </div>
+  </section>
+
+  <section class="page-break" id="summary">
+    <div class="eyebrow">EXECUTIVE SUMMARY</div>
+    <h2>보고서 요약</h2>
+    <p class="lead">AbyssGen은 동일한 시드로 동일한 던전을 재현하면서도, 방·몬스터·함정·보상 구성이 달라지는 플레이 공간을 자동 생성하기 위해 시작된 Unreal Engine 5 프로젝트다.</p>
+    <div class="summary">
+      초기에는 랜덤 방 생성, Separation Steering, Delaunay 삼각분할, Kruskal 최소 신장 트리 등 <strong>절차적 레이아웃 알고리즘의 구현과 시각화</strong>가 중심이었다. 이후 프로젝트의 목표가 실제 플레이 가능한 던전 제작으로 구체화되면서, 생성 방식은 미리 제작한 모듈형 방을 출구 기준으로 연결하는 구조로 재편되었다. 현재는 생성된 공간 위에 전투, StateTree AI, 함정, 상호작용 오브젝트, 확률 기반 콘텐츠 스폰을 결합한다.
+    </div>
+    <div class="toc">
+      <a href="#intro"><b>01 서론</b>프로젝트 목적과 개발 배경</a>
+      <a href="#body"><b>02 본론</b>기능, 구조, 실행 흐름</a>
+      <a href="#refactor"><b>03 리팩토링</b>구조 변화와 효과</a>
+      <a href="#experiment"><b>04 실험</b>핵심 기능 검증 시나리오</a>
+      <a href="#conclusion"><b>05 결론</b>성과, 한계, 발전 방향</a>
+    </div>
+    <h3>기술 구성</h3>
+    <table>
+      <tr><th>구분</th><th>적용 기술</th><th>역할</th></tr>
+      <tr><td>엔진/언어</td><td>Unreal Engine 5, C++, Blueprint</td><td>C++로 런타임 시스템을 구성하고 Blueprint로 방 콘텐츠와 연출을 제작</td></tr>
+      <tr><td>절차 생성</td><td><code>FRandomStream</code>, 모듈형 Room, Exit 스냅</td><td>시드 재현성과 확장 가능한 방 조립 방식 제공</td></tr>
+      <tr><td>AI</td><td>StateTree, GameplayStateTree</td><td>몬스터의 탐지·추적·공격 상태를 데이터 중심으로 제어</td></tr>
+      <tr><td>설계</td><td>Composition, SRP, Interface</td><td>액터의 책임을 컴포넌트로 분리하고 시스템 간 결합도를 낮춤</td></tr>
+    </table>
+  </section>
+
+  <section class="page-break" id="intro">
+    <div class="eyebrow">01 INTRODUCTION</div>
+    <h2>서론</h2>
+    <h3>1.1 프로젝트 시작 목적</h3>
+    <p>고정된 맵은 제작자가 의도한 경험을 안정적으로 제공하지만, 반복 플레이에서는 공간과 사건의 예측 가능성이 높아진다. AbyssGen은 이 문제를 해결하기 위해 <strong>실행할 때마다 다른 던전을 자동 생성하고, 생성 결과를 게임 플레이까지 연결하는 방법</strong>을 탐구하는 프로젝트로 시작되었다.</p>
+    <p>초기 개발은 절차 생성 알고리즘 자체를 검증하는 데 초점을 두었다. 무작위로 생성한 방을 분리하고, 방 중심점을 Delaunay 삼각분할로 연결한 뒤, Kruskal 알고리즘으로 최소 신장 트리를 구성하여 던전의 연결성을 확보했다. 이 단계는 “어떻게 무작위 공간을 연결 가능한 던전으로 변환할 것인가”에 대한 기술 실험이었다.</p>
+    <p>개발이 진행되면서 목표는 단순한 레이아웃 시각화에서 <strong>실제로 탐험하고 전투할 수 있는 게임 공간</strong>으로 확장되었다. 이에 따라 현재 프로젝트는 다음 네 가지 목적을 가진다.</p>
+    <div class="cards">
+      <div class="card"><span class="number">01</span><h3>재현 가능한 생성</h3><p>하나의 시드가 방 선택, 출구 선택, 콘텐츠 확률을 모두 통제하여 오류 재현과 밸런스 비교를 가능하게 한다.</p></div>
+      <div class="card"><span class="number">02</span><h3>모듈형 제작</h3><p>방 Blueprint를 독립적인 모듈로 제작하고 출구 트랜스폼만 맞추어 다양한 던전을 조립한다.</p></div>
+      <div class="card"><span class="number">03</span><h3>플레이 시스템 결합</h3><p>생성된 공간에 몬스터, 전투, 함정, 보상, 상호작용을 배치하여 게임 루프를 완성한다.</p></div>
+      <div class="card"><span class="number">04</span><h3>유지보수 가능한 구조</h3><p>거대한 액터를 책임별 컴포넌트와 인터페이스로 분해해 기능 추가와 교체 비용을 낮춘다.</p></div>
+    </div>
+    <h3>1.2 프로젝트 구성</h3>
+    <p>핵심 시스템은 절차적 던전을 담당하는 <code>PDG</code>, 체력과 공격을 담당하는 <code>Combat</code>, StateTree AI와 몬스터 행동을 담당하는 <code>Monster</code>, 동적 위험물을 담당하는 <code>Trap</code>으로 구성된다. 각 시스템은 공용 인터페이스와 ActorComponent를 통해 연결된다.</p>
+  </section>
+
+  <section class="page-break" id="body">
+    <div class="eyebrow">02 MAIN SYSTEMS</div>
+    <h2>본론: 핵심 기능</h2>
+    <h3>2.1 시드 기반 모듈형 던전 생성</h3>
+    <p><code>ADungeonGenerator</code>는 미리 제작한 방 Blueprint를 방의 출구 월드 트랜스폼에 맞추어 연결한다. 그리드나 타일맵에 종속되지 않고, 각 방이 가진 출구의 위치와 방향을 기준으로 다음 방을 스냅한다. 따라서 방의 형태가 직사각형에 한정되지 않으며, 제작자가 만든 공간의 형태와 연출을 그대로 유지할 수 있다.</p>
+    <div class="pipeline keep">
+      <div class="step"><b>시드 설정</b><br><code>SetSeed</code></div><div class="arrow">→</div>
+      <div class="step"><b>시작 방</b><br><code>SpawnStarterRoom</code></div><div class="arrow">→</div>
+      <div class="step"><b>일반 방 반복</b><br><code>SpawnNextRoom</code></div><div class="arrow">→</div>
+      <div class="step"><b>특수 방</b><br><code>SpawnSpecialRooms</code></div><div class="arrow">→</div>
+      <div class="step"><b>마감·배치</b><br><code>FinalizeDungeon</code></div>
+    </div>
+    <ul>
+      <li><strong>결정적 난수:</strong> 방·출구·스폰 선택이 단일 <code>FRandomStream</code>을 사용하므로 같은 시드는 같은 결과를 만든다.</li>
+      <li><strong>겹침 복구:</strong> 새 방이 기존 공간과 겹치면 해당 방을 제거하고 방 카운트를 복구해 목표 방 수를 유지한다.</li>
+      <li><strong>종단 처리:</strong> 남은 출구는 벽으로 막고, 연결된 출구에는 문과 토치를 배치한다.</li>
+      <li><strong>특수 공간:</strong> 일반 방 배치 후 남은 막다른 출구에 보물방 등 특수 방을 배치한다.</li>
+    </ul>
+    <figure>
+      <img src="Dungeon.png" alt="절차적으로 생성된 던전의 통로와 출입문">
+      <figcaption>그림 1. 모듈형 방과 출구를 연결해 구성한 던전 내부. 연결된 출구에는 문과 조명이 배치된다.</figcaption>
+    </figure>
+
+    <h3>2.2 방과 콘텐츠 배치의 분리</h3>
+    <p><code>ARoomBase</code>는 방 내부를 Geometry, Overlap, ExitPoints, FloorSpawnPoints 폴더로 구분한다. 생성기는 이 규약만 알고 방의 구체적인 형태에는 의존하지 않는다. 콘텐츠 배치는 <code>UDungeonPopulatorComponent</code>가 전담한다.</p>
+    <div class="architecture keep">
+      <div class="layer"><b>레이아웃 계층</b><code>ADungeonGenerator</code><br>방 연결, 겹침 검사, 출구 마감</div>
+      <div class="layer"><b>콘텐츠 계층</b><code>UDungeonPopulatorComponent</code><br>스폰 테이블 선택, 확률·중복 규칙 적용</div>
+      <div class="layer"><b>위치 데이터</b><code>USpawnPointComponent</code><br>Enemy / Item / Reward / Trap 등 배치 지점</div>
+      <div class="layer"><b>방 콘텐츠</b><code>ARoomBase</code> 파생 Blueprint<br>지오메트리, 출구, 충돌, 연출</div>
+    </div>
+    <p>스폰 포인트는 “어디에 배치할지”를, 스폰 테이블은 “무엇을 배치할지”를 결정한다. <code>Optional</code>, <code>Guaranteed</code>, <code>Unique</code>, <code>RoomUnique</code> 규칙과 태그 전용 테이블을 이용하여 같은 방 구조에서도 서로 다른 적·아이템·함정 조합을 만들 수 있다.</p>
+  </section>
+
+  <section class="page-break">
+    <div class="eyebrow">02 MAIN SYSTEMS</div>
+    <h2>본론: 플레이 시스템</h2>
+    <h3>2.3 전투와 데미지</h3>
+    <p><code>UHealthComponent</code>는 체력, 피해, 회복, 사망을 공통 처리한다. Unreal의 표준 데미지 경로인 <code>ApplyDamage → TakeDamage → OnTakeAnyDamage</code>를 사용하고, 플레이어와 몬스터는 <code>IDamageable</code>을 통해 체력 컴포넌트를 제공한다.</p>
+    <table>
+      <tr><th>기능</th><th>구현</th><th>설계상 의미</th></tr>
+      <tr><td>체력/사망</td><td><code>UHealthComponent</code></td><td>UI, 피격 연출, 사망 처리에서 동일 이벤트를 구독 가능</td></tr>
+      <tr><td>몬스터 공격</td><td><code>UMeleeAttackComponent</code></td><td>타겟, 시야, 준비 시간, 스윕 트레이스를 캡슐화</td></tr>
+      <tr><td>플레이어 공격</td><td><code>UPlayerMeleeAttackComponent</code></td><td>입력과 컨트롤러 방향을 반영한 근접 공격</td></tr>
+      <tr><td>타격 시점</td><td>Animation Notify</td><td>애니메이션 동작과 실제 판정 프레임을 동기화</td></tr>
+    </table>
+    <figure>
+      <img src="Combat.png" alt="플레이어와 몬스터의 근접 전투 판정 장면">
+      <figcaption>그림 2. 근접 전투 장면. 공격 컴포넌트가 애니메이션 타이밍에 맞추어 충돌 판정과 피해 처리를 수행한다.</figcaption>
+    </figure>
+
+    <h3>2.4 컴포넌트 기반 몬스터와 StateTree AI</h3>
+    <p><code>AAbyssMonsterBase</code>는 탐지, 공격, 체력, 피격, 스폰, 사망을 직접 구현하는 대신 여섯 개의 컴포넌트를 조립하는 코디네이터 역할을 한다. <code>AAbyssMonsterAIController</code>는 StateTree를 구동하고, StateTree는 몬스터가 공개한 탐지·사거리·공격 명령을 호출한다.</p>
+    <div class="cards">
+      <div class="card"><h3>Targeting</h3><p>플레이어 탐지, 거리, 시야선, 방향 정렬</p></div>
+      <div class="card"><h3>Melee Attack</h3><p>몽타주, 공격 준비, 판정, 종료 통지</p></div>
+      <div class="card"><h3>Hit Reaction</h3><p>피해 이벤트를 구독하여 몽타주와 VFX/사운드 재생</p></div>
+      <div class="card"><h3>Spawn &amp; Death</h3><p>디졸브 기반 등장·퇴장 연출과 액터 제거</p></div>
+    </div>
+
+    <h3>2.5 함정과 상호작용 오브젝트</h3>
+    <p><code>ATrapHazard</code>는 왕복/회전 운동을 담당하는 <code>UOscillatingMovementComponent</code>와 접촉 피해를 담당하는 <code>UContactDamageComponent</code>를 조립한다. 이동 방식과 회전축을 조합하여 바닥 블레이드나 진자형 함정 같은 변형을 구성하고, 대상별 재타격 간격을 적용해 연속 피해를 제어한다.</p>
+    <p>문, 상자, 코인, 엘리베이터 방은 <code>IInteractable</code> 규약으로 플레이어 오버랩을 처리한다. <code>ISpawnable</code>은 몬스터·코인·함정이 바닥에 스폰될 때 필요한 높이 보정을 통일한다.</p>
+    <table>
+      <tr><th>오브젝트</th><th>대표 동작</th></tr>
+      <tr><td>Door / ClosingWall</td><td>연결 통로 개폐, 미사용 출구 차단</td></tr>
+      <tr><td>Chest / Coin</td><td>보물방 매복 트리거, 수집 및 부양 연출</td></tr>
+      <tr><td>Elevator Room</td><td>플레이어 진입 시 상하 이동하여 다층 공간 연결</td></tr>
+      <tr><td>Trap Hazard</td><td>왕복·스윙·등속 회전 운동과 접촉 피해, 대상별 재타격 쿨다운</td></tr>
+    </table>
+    <div class="image-grid">
+      <figure>
+        <img src="SpecialRoom.png" alt="상자를 열어 매복 몬스터가 등장한 특수 보물방">
+        <figcaption>그림 3. 상자 개방 이벤트로 매복 몬스터가 등장하는 특수 보물방.</figcaption>
+      </figure>
+      <figure>
+        <img src="Trap.png" alt="던전 내부에서 좌우로 이동하는 함정">
+        <figcaption>그림 4. 던전 내부에 배치된 이동형 함정.</figcaption>
+      </figure>
+    </div>
+  </section>
+
+  <section class="page-break" id="refactor">
+    <div class="eyebrow">03 REFACTORING</div>
+    <h2>리팩토링으로 인한 변화</h2>
+    <p class="lead">리팩토링의 방향은 알고리즘 데모를 게임 제작 기반으로 전환하고, 하나의 클래스에 집중된 책임을 독립 컴포넌트와 인터페이스로 분산하는 것이었다.</p>
+
+    <h3>3.1 생성 방식의 전환</h3>
+    <div class="before-after keep">
+      <div class="panel">
+        <b>초기 구조</b>
+        <p>랜덤 방 생성 → Separation Steering → Delaunay → MST → 복도 생성</p>
+        <p class="small">알고리즘 검증과 디버그 시각화에 적합하지만, 실제 아트가 적용된 다양한 방과 게임 콘텐츠를 결합하는 비용이 큼.</p>
+      </div>
+      <div class="mid">→</div>
+      <div class="panel after">
+        <b>현재 구조</b>
+        <p>Room Blueprint → Exit 스냅 → 겹침 검사 → 특수 방 → 마감/콘텐츠 배치</p>
+        <p class="small">제작자가 설계한 방 품질을 보존하면서 방 추가, 다층 구조, 문·토치·함정 배치를 쉽게 확장.</p>
+      </div>
+    </div>
+
+    <h3>3.2 책임 분리</h3>
+    <table>
+      <tr><th>리팩토링 항목</th><th>이전 문제</th><th>현재 변화</th><th>효과</th></tr>
+      <tr><td>생성/배치 분리</td><td>생성기가 공간과 콘텐츠를 함께 관리</td><td><code>DungeonGenerator</code>와 <code>DungeonPopulatorComponent</code> 분리</td><td>레이아웃 로직 수정 없이 스폰 정책 교체 가능</td></tr>
+      <tr><td>몬스터 분해</td><td>탐지·공격·피격·사망 로직이 액터에 집중</td><td>책임별 ActorComponent 6개 조립</td><td>기능 재사용, 독립 테스트, 파생 몬스터 구현 단순화</td></tr>
+      <tr><td>공통 체력</td><td>액터마다 데미지 처리 경로가 달라질 가능성</td><td><code>UHealthComponent</code>와 <code>IDamageable</code> 도입</td><td>플레이어·몬스터·AI가 동일 계약 사용</td></tr>
+      <tr><td>상호작용 통합</td><td>문, 상자, 코인별 오버랩 처리 중복</td><td><code>IInteractable</code> 기반 중계</td><td>플레이어 코드 변경 없이 상호작용 액터 추가</td></tr>
+      <tr><td>스폰 위치/대상 분리</td><td>방 Blueprint가 구체 클래스에 종속</td><td>SpawnPoint 마커와 SpawnTable 분리</td><td>방 재사용성과 밸런스 데이터 편집성 향상</td></tr>
+      <tr><td>방 지오메트리</td><td>C++ 생성 구조의 콘텐츠 편집 제약</td><td>Blueprint/ISM 기반 모듈형 방</td><td>레벨 디자이너의 시각적 제작과 반복 작업 지원</td></tr>
+    </table>
+
+    <h3>3.3 변경 이력에서 확인되는 발전 과정</h3>
+    <div class="timeline">
+      <div class="event"><span class="tag">1단계 · 알고리즘 기반</span><p>랜덤 방, Separation Steering, Delaunay 삼각분할, Kruskal MST, 루프 복원, 복도 생성 순으로 연결 가능한 던전 그래프를 구현했다.</p></div>
+      <div class="event"><span class="tag">2단계 · 모듈형 방 전환</span><p>던전 생성기를 Stage 구조로 재편하고 <code>RoomBase</code>와 Exit 연결 규약을 도입했다. 이후 시드 시스템, 겹침 검사, 미사용 출구 차단, 다층 방을 추가했다.</p></div>
+      <div class="event"><span class="tag">3단계 · 상호작용 확장</span><p>문, 엘리베이터, 코인, 상자와 스폰 포인트를 추가하고 공통 <code>IInteractable</code> 인터페이스로 중복을 제거했다.</p></div>
+      <div class="event"><span class="tag">4단계 · 게임 시스템 결합</span><p>몬스터 AI와 특수 보물방 전투를 추가한 뒤, 전투·몬스터·함정·Populator를 책임별 컴포넌트 구조로 정리했다.</p></div>
+    </div>
+
+    <div class="note"><strong>종합 평가:</strong> 리팩토링 이후 핵심 액터는 동작을 모두 소유하는 객체가 아니라, 컴포넌트를 조립하고 외부 요청을 중계하는 얇은 façade가 되었다. 이 변화는 코드 양을 줄이는 것보다 <strong>변경의 영향 범위를 제한</strong>하는 데 의미가 있다.</div>
+  </section>
+
+  <section class="page-break" id="experiment">
+    <div class="eyebrow">04 EXPERIMENT</div>
+    <h2>실험 및 검증</h2>
+    <div class="experiment-note"><strong>검증 원칙:</strong> 기능 검증은 PIE(Play In Editor)에서 동일 조건을 반복 실행하고, 생성 결과·이벤트 흐름·상태 전이를 비교하는 방식으로 진행한다. 생성 시간과 프레임 비용은 Unreal Insights 또는 CSV Profiler로 별도 계측한다.</div>
+
+    <h3>4.1 기능 검증 시나리오</h3>
+    <table>
+      <caption>표 1. 에디터 PIE(Play In Editor) 기준 검증 항목</caption>
+      <tr><th>No.</th><th>검증 목적</th><th>절차</th><th>판정 기준</th></tr>
+      <tr><td>1</td><td>시드 재현성</td><td>동일 Seed와 RoomAmount로 두 번 실행하고 방·출구·콘텐츠 배치를 비교</td><td>두 결과의 구조와 스폰 결과가 동일</td></tr>
+      <tr><td>2</td><td>겹침 복구</td><td>출구가 밀집된 방 조합으로 생성하여 겹침 후보를 유도</td><td>겹친 방은 제거되고 최종 방 수는 목표값 유지</td></tr>
+      <tr><td>3</td><td>출구 마감</td><td>생성 완료 후 연결/미연결 출구를 관찰</td><td>연결 출구에는 문·토치, 미연결 출구에는 ClosingWall 배치</td></tr>
+      <tr><td>4</td><td>스폰 규칙</td><td>Optional, Guaranteed, Unique, RoomUnique 포인트를 혼합 배치</td><td>확률 및 중복 제한이 규칙대로 적용</td></tr>
+      <tr><td>5</td><td>전투 연동</td><td>플레이어와 몬스터가 서로 근접 공격 수행</td><td>Anim Notify 시점에 판정되고 Health/피격/사망 이벤트가 순차 실행</td></tr>
+      <tr><td>6</td><td>함정 동작</td><td>이동·회전 경로에 진입한 뒤 동일 함정과 반복 접촉</td><td>설정된 운동 경로를 유지하고 ReHitInterval에 따라 피해 간격을 준수</td></tr>
+      <tr><td>7</td><td>특수방 매복</td><td>보물방 상자를 개방</td><td>지정 태그 위치에 매복 몬스터가 등장하고 연출 실행</td></tr>
+    </table>
+
+    <h3>4.2 정량 실험 제안</h3>
+    <p>프로젝트의 생성 안정성과 성능을 객관적으로 제시하려면 다음 데이터를 자동 수집하는 테스트를 추가하는 것이 적절하다.</p>
+    <table>
+      <tr><th>지표</th><th>측정 방법</th><th>의미</th></tr>
+      <tr><td>생성 성공률</td><td>Seed 1~1,000을 순회하여 목표 방 수 도달 여부 기록</td><td>방 세트와 출구 구성의 안정성 평가</td></tr>
+      <tr><td>평균 재시도 수</td><td>겹침으로 폐기된 방 수 / 생성된 던전 수</td><td>배치 알고리즘 효율과 방 규격 문제 탐지</td></tr>
+      <tr><td>생성 시간</td><td>BeginPlay부터 FinalizeDungeon 완료까지 Unreal Insights/CSV Profiler로 측정</td><td>RoomAmount 증가에 따른 확장성 검증</td></tr>
+      <tr><td>콘텐츠 분포</td><td>시드별 Enemy/Reward/Trap 스폰 수 집계</td><td>확률 테이블의 편향과 플레이 난이도 검토</td></tr>
+      <tr><td>프레임 비용</td><td>활성 몬스터·함정 수별 Game Thread 시간 측정</td><td>컴포넌트 Tick과 StateTree 운용 비용 확인</td></tr>
+    </table>
+
+  </section>
+
+  <section class="page-break" id="conclusion">
+    <div class="eyebrow">05 CONCLUSION</div>
+    <h2>결론</h2>
+    <p class="lead">AbyssGen은 절차 생성 알고리즘 연구에서 출발해, 재현 가능한 모듈형 던전과 실제 플레이 시스템을 결합한 게임 프로토타입으로 발전했다.</p>
+    <p>프로젝트의 가장 큰 성과는 던전 생성 자체보다 <strong>생성된 공간을 게임 콘텐츠와 연결하는 구조</strong>에 있다. 방은 Exit 규약으로 조립되고, 스폰 포인트와 테이블이 위치와 대상을 분리하며, 전투·몬스터·함정은 공통 컴포넌트와 인터페이스를 통해 상호작용한다. 그 결과 새 방, 새 몬스터, 새 함정, 새 보상을 기존 핵심 코드를 크게 변경하지 않고 추가할 수 있는 기반이 마련되었다.</p>
+    <div class="conclusion-grid keep">
+      <div><strong>기술적 성과</strong><br>시드 재현성, 겹침 복구, 모듈형 방 연결, StateTree AI, 표준 데미지 경로를 하나의 런타임으로 통합했다.</div>
+      <div><strong>구조적 성과</strong><br>생성/배치와 액터/행동 책임을 분리하여 변경 영향 범위와 중복 코드를 줄였다.</div>
+      <div><strong>콘텐츠 성과</strong><br>문·상자·코인·엘리베이터·특수방·함정을 통해 탐험과 전투가 이어지는 기본 게임 루프를 구성했다.</div>
+    </div>
+    <h3>향후 개선 방향</h3>
+    <ol>
+      <li><strong>자동화 테스트:</strong> 대량 시드 생성 테스트와 스폰 분포 검증을 추가해 안정성을 수치화한다.</li>
+      <li><strong>성능 프로파일링:</strong> 방 수, 몬스터 수, 활성 함정 수에 따른 생성 시간과 프레임 비용을 측정한다.</li>
+      <li><strong>진행 구조:</strong> 방 난이도, 열쇠/문, 목표 방, 보상 곡선을 도입해 생성 결과에 플레이 목적을 부여한다.</li>
+      <li><strong>데이터 주도화:</strong> 스폰 테이블과 방 메타데이터를 Data Asset 중심으로 옮겨 디자이너 편집성을 강화한다.</li>
+    </ol>
+    <div class="note">현재 구조는 “무작위 공간 생성”을 넘어, 절차적으로 만들어진 공간에서 전투와 탐험이 작동하도록 하는 기반을 보여준다. 따라서 이 프로젝트는 절차 생성 기술과 게임플레이 아키텍처를 함께 설명하는 포트폴리오 사례로 적합하다.</div>
+
+  </section>
+</main>
+</body>
+</html>

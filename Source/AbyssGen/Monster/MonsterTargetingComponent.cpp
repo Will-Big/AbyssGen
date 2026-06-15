@@ -92,6 +92,11 @@ bool UMonsterTargetingComponent::IsTargetInAttackRange() const
 	return !bRequireLineOfSight || HasLineOfSightToTarget();
 }
 
+float UMonsterTargetingComponent::GetApproachAcceptanceRadius() const
+{
+	return FMath::Max(0.0f, AttackRange - ApproachRangeBuffer);
+}
+
 void UMonsterTargetingComponent::FaceTarget()
 {
 	if (!OwnerCharacter || !HasValidTarget())

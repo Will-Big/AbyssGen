@@ -35,6 +35,10 @@ public:
 	UFUNCTION(BlueprintPure, Category = "Targeting")
 	bool IsTargetInAttackRange() const;
 
+	/** Move To가 공격 범위 안쪽까지 접근하도록 사용할 허용 반경. */
+	UFUNCTION(BlueprintPure, Category = "Targeting")
+	float GetApproachAcceptanceRadius() const;
+
 	UFUNCTION(BlueprintCallable, Category = "Targeting")
 	void FaceTarget();
 
@@ -46,6 +50,10 @@ protected:
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Targeting", meta = (ClampMin = "0.0", Units = "cm"))
 	float AttackRange = 140.0f;
+
+	/** 이동 종료 지점을 공격 범위보다 안쪽으로 당기는 여유 거리. */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Targeting", meta = (ClampMin = "0.0", Units = "cm"))
+	float ApproachRangeBuffer = 20.0f;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Targeting")
 	bool bRequireLineOfSight = true;
